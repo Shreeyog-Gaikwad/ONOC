@@ -1,65 +1,87 @@
-import { StyleSheet, Text, View, TextInput, Image, TouchableOpacity } from 'react-native'
+import { StyleSheet, Text, View, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Keyboard, Platform, ScrollView } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { useRouter } from "expo-router";
+import { useRouter, useNavigation } from "expo-router";
 
 const Login = () => {
 
     const router = useRouter();
 
+    const navigation = useNavigation();
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+    useEffect(() => {
+        navigation.setOptions({
+            headerShown: false,
+        });
+        const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () =>
+            setKeyboardVisible(true)
+        );
+        const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () =>
+            setKeyboardVisible(false)
+        );
+
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
+
+
     const [email, setEmail] = useState("");
     const [pass, setPass] = useState("");
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="light-content" backgroundColor="#3629B7" />
-            <View style={styles.container1}>
-                <Text style={styles.text}>
-                    <TouchableOpacity  style={styles.arrow} onPress={() => router.back()}>
-                        <AntDesign name="left" size={25} color="white" />
-                    </TouchableOpacity>
-                    Login</Text>
-            </View>
-            <View style={styles.container2}>
-                <Text style={styles.head1}>Welcome Back,</Text>
-                <Text style={styles.head2}>Hello there, Login to continue</Text>
+        <KeyboardAvoidingView onPress={Keyboard.dismiss} style={{ flex: 1 }} >
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                <View style={styles.container}>
+                    <StatusBar barStyle="light-content" backgroundColor="#3629B7" />
+                    <View style={styles.container1}>
+                        <Text style={styles.text}>
+                            <TouchableOpacity style={styles.arrow} onPress={() => router.back()}>
+                                <AntDesign name="left" size={25} color="white" />
+                            </TouchableOpacity>
+                            Login</Text>
+                    </View>
+                    <View style={styles.container2}>
+                        <Text style={styles.head1}>Welcome Back,</Text>
+                        <Text style={styles.head2}>Hello there, Login to continue</Text>
 
-                <View style={styles.ImageView}>
-                    <Image source={require('../../../assets/images/ONOC.png')} style={styles.image} />
+                        <View style={styles.ImageView}>
+                            <Image source={require('../../../assets/images/ONOC.png')} style={styles.image} />
+                        </View>
+
+
+                        <View style={styles.inputContainerWrapper}>
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.inputContainerTxt}>Email</Text>
+                                <TextInput style={styles.input} placeholder="Enter your Email" onChangeText={(value) => setEmail(value)} />
+                            </View>
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.inputContainerTxt}>Password</Text>
+                                <TextInput style={styles.input} placeholder="Enter your Password" secureTextEntry={true} onChangeText={(value) => setPass(value)} />
+                            </View>
+                            <TouchableOpacity style={styles.login}>
+                                <Text style={styles.logintxt}>Login </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity>
+                                <Text style={styles.forgot}>Forgot Password?</Text>
+                            </TouchableOpacity>
+
+                            <View style={styles.signupCont}>
+                                <Text>Don't have an Account?</Text>
+                                <TouchableOpacity onPress={() => { router.replace('/auth/SignUp/SignUp') }}>
+                                    <Text style={styles.signuptxt}>Create Account</Text>
+                                </TouchableOpacity>
+                            </View>
+
+
+                        </View>
+                    </View>
                 </View>
-
-
-                <View style={styles.inputContainerWrapper}>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputContainerTxt}>Email</Text>
-                        <TextInput style={styles.input} placeholder="Enter your Email" onChangeText={(value) => setEmail(value)} />
-                    </View>
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputContainerTxt}>Password</Text>
-                        <TextInput style={styles.input} placeholder="Enter your Password" secureTextEntry={true} onChangeText={(value) => setPass(value)} />
-                    </View>
-                    <TouchableOpacity style={styles.login}>
-                        <Text style={styles.logintxt}>Login </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                        <Text style={styles.forgot}>Forgot Password?</Text>
-                    </TouchableOpacity>
-                    {/* <TouchableOpacity onPress={() => { router.replace('/auth/SignUp/SignUp') }} style={styles.create}>
-                        <Text style={styles.logintxt}>Create Account</Text>
-                    </TouchableOpacity> */}
-
-                    <View style={styles.signupCont}>
-                        <Text>Don't have an Account?</Text>
-                        <TouchableOpacity onPress={() => { router.replace('/auth/SignUp/SignUp') }}>
-                            <Text style={styles.signuptxt}>Create Account</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    
-                </View>
-            </View>
-        </View>
+            </ScrollView>
+        </KeyboardAvoidingView>
 
     )
 }
@@ -81,8 +103,8 @@ const styles = StyleSheet.create({
         paddingLeft: 20,
         fontWeight: 'bold',
     },
-    arrow : {
-        paddingRight : 12,
+    arrow: {
+        paddingRight: 12,
     },
     container2: {
         height: '85%',
@@ -142,7 +164,7 @@ const styles = StyleSheet.create({
     logintxt: {
         fontSize: 20,
     },
-    forgot : {
+    forgot: {
         textAlign: 'right',
         paddingRight: 10,
         paddingTop: 5,
@@ -159,15 +181,15 @@ const styles = StyleSheet.create({
         marginTop: 10,
         borderWidth: 1,
     },
-    signupCont : {
+    signupCont: {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        flexDirection : 'row',
+        flexDirection: 'row',
         gap: 8,
-        marginTop : 30,
+        marginTop: 30,
     },
-    signuptxt : {
-        color : '#3629B7',
+    signuptxt: {
+        color: '#3629B7',
     }
 })
