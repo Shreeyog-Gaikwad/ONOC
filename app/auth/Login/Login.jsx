@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter, useNavigation } from "expo-router";
 import { auth } from '../../../config/FirebaseConfig';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 
 const Login = () => {
 
@@ -22,6 +22,17 @@ const Login = () => {
                 console.log(user);
 
                 router.replace("/(tabs)/home")
+            })
+            .catch((error) => {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+            });
+    }
+
+    const forgetPass = () => {
+        sendPasswordResetEmail(auth, email)
+            .then(() => {
+                console.log("Email sent");
             })
             .catch((error) => {
                 const errorCode = error.code;
@@ -56,7 +67,7 @@ const Login = () => {
                     <StatusBar barStyle="light-content" backgroundColor="#3629B7" />
                     <View style={styles.container1}>
                         <Text style={styles.text}>
-                            <TouchableOpacity style={styles.arrow} onPress={() => router.back()}>
+                            <TouchableOpacity style={styles.arrow} onPress={() => router.replace('/')}>
                                 <AntDesign name="left" size={25} color="white" />
                             </TouchableOpacity>
                             Login</Text>
@@ -82,7 +93,7 @@ const Login = () => {
                             <TouchableOpacity style={styles.login} onPress={login}>
                                 <Text style={styles.logintxt}>Login </Text>
                             </TouchableOpacity>
-                            <TouchableOpacity>
+                            <TouchableOpacity style={styles.forgot} onPress={forgetPass}>
                                 <Text style={styles.forgot}>Forgot Password?</Text>
                             </TouchableOpacity>
 

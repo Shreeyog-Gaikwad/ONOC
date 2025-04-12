@@ -3,6 +3,7 @@ import React from "react";
 import { auth } from "../../config/FirebaseConfig";
 import { signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 
 const profile = () => {
   const router = useRouter();
@@ -18,6 +19,7 @@ const profile = () => {
 
   return (
     <View>
+      <StatusBar backgroundColor="#3629B7" />
       <Text>profile</Text>
 
       <TouchableOpacity style={styles.logout} onPress={logout}>
