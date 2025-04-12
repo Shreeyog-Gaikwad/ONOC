@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react'
 import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter, useNavigation } from "expo-router";
+import { auth } from '../../../config/FirebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const Login = () => {
 
@@ -10,6 +12,22 @@ const Login = () => {
 
     const navigation = useNavigation();
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+    const [email, setEmail] = useState("");
+    const [pass, setPass] = useState("");
+    const login = () => {
+        signInWithEmailAndPassword(auth, email, pass)
+            .then((userCredential) => {
+                const user = userCredential.user;
+                console.log(user);
+
+                router.replace("/(tabs)/home")
+            })
+            .catch((error) => {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+            });
+    }
 
     useEffect(() => {
         navigation.setOptions({
@@ -29,8 +47,7 @@ const Login = () => {
     }, []);
 
 
-    const [email, setEmail] = useState("");
-    const [pass, setPass] = useState("");
+
 
     return (
         <KeyboardAvoidingView onPress={Keyboard.dismiss} style={{ flex: 1 }} >
@@ -62,7 +79,7 @@ const Login = () => {
                                 <Text style={styles.inputContainerTxt}>Password</Text>
                                 <TextInput style={styles.input} placeholder="Enter your Password" secureTextEntry={true} onChangeText={(value) => setPass(value)} />
                             </View>
-                            <TouchableOpacity style={styles.login}>
+                            <TouchableOpacity style={styles.login} onPress={login}>
                                 <Text style={styles.logintxt}>Login </Text>
                             </TouchableOpacity>
                             <TouchableOpacity>

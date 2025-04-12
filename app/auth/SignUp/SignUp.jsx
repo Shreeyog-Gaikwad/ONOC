@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react'
 import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter, useNavigation } from "expo-router";
+import { auth } from '../../../config/FirebaseConfig';
+import { createUserWithEmailAndPassword } from 'firebase/auth'
 
 const Login = () => {
 
@@ -32,6 +34,23 @@ const Login = () => {
     const [number, setNumber] = useState("");
     const [email, setEmail] = useState("");
     const [pass, setPass] = useState("");
+
+    const SignUp = () =>{
+        createUserWithEmailAndPassword(auth, email, pass)
+  .then((userCredential) => {
+    // Signed up 
+    const user = userCredential.user;
+    console.log(user);
+    
+    // ...
+  })
+  .catch((error) => {
+    const errorCode = error.code;
+    const errorMessage = error.message;
+    // ..
+  });
+
+    }
 
     return (
 
@@ -72,7 +91,7 @@ const Login = () => {
                                 <Text style={styles.inputContainerTxt}>Password</Text>
                                 <TextInput style={styles.input} placeholder="Enter your Password" secureTextEntry={true} onChangeText={(value) => setPass(value)} />
                             </View>
-                            <TouchableOpacity style={styles.login}>
+                            <TouchableOpacity style={styles.login} onPress={SignUp}>
                                 <Text style={styles.logintxt}>Create Account </Text>
                             </TouchableOpacity>
 
