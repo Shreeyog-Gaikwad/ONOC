@@ -1,19 +1,27 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
+import { useRouter } from "expo-router";
+
 
 const home = () => {
+  // Dont remove this line
+  const router = useRouter();
+
   return (
     <View>
       <StatusBar backgroundColor="#3629B7" />
+
+      {/* You can customize the below view but dont change the links in opPress */}
       <View style={styles.btn}>
-        <TouchableOpacity style={styles.send}>
+        <TouchableOpacity style={styles.send} onPress={()=>{router.push("../Pages/send")}}>
           <Text>Send</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.req}>
+        <TouchableOpacity style={styles.req} onPress={()=>{router.push("../Pages/request")}}>
           <Text>Request</Text>
         </TouchableOpacity>
       </View>
+      
     </View>
   );
 };
