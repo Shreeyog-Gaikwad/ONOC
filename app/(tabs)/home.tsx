@@ -9,7 +9,7 @@ const home = () => {
   const router = useRouter();
 
   return (
-    <View>
+    <View style={styles.container}>
       <StatusBar backgroundColor="#3629B7" />
 
       {/* You can customize the below view but dont change the links in opPress */}
@@ -29,6 +29,11 @@ const home = () => {
 export default home;
 
 const styles = StyleSheet.create({
+  container:{
+    backgroundColor: "white",
+    height : 1000,
+  },
+
   btn: {
     display: 'flex',
     flexDirection: 'row',
