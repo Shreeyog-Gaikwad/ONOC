@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter, useNavigation } from "expo-router";
 import { auth } from '../../../config/FirebaseConfig';
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword , updateProfile} from 'firebase/auth'
 
 const Login = () => {
 
@@ -37,17 +37,17 @@ const Login = () => {
 
     const SignUp = () =>{
         createUserWithEmailAndPassword(auth, email, pass)
-  .then((userCredential) => {
-    // Signed up 
+  .then(async(userCredential) => {
     const user = userCredential.user;
+    await updateProfile(user, {
+        displayName: name,
+    })
     console.log(user);
-    
-    // ...
+    router.replace("/(tabs)/home")
   })
   .catch((error) => {
     const errorCode = error.code;
     const errorMessage = error.message;
-    // ..
   });
 
     }
@@ -91,7 +91,7 @@ const Login = () => {
                                 <Text style={styles.inputContainerTxt}>Password</Text>
                                 <TextInput style={styles.input} placeholder="Enter your Password" secureTextEntry={true} onChangeText={(value) => setPass(value)} />
                             </View>
-                            <TouchableOpacity style={styles.login} onPress={SignUp}>
+                            <TouchableOpacity style={styles.login} onPress={SignUp} >
                                 <Text style={styles.logintxt}>Create Account </Text>
                             </TouchableOpacity>
 
