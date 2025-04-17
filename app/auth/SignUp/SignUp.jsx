@@ -1,10 +1,13 @@
-import { StyleSheet, Text, View, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Keyboard, Platform, ScrollView } from 'react-native'
+import { StyleSheet, Text, View, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Keyboard, ScrollView } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter, useNavigation } from "expo-router";
-import { auth } from '../../../config/FirebaseConfig';
-import { createUserWithEmailAndPassword , updateProfile} from 'firebase/auth'
+import { auth, db } from '../../../config/FirebaseConfig';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+
+import { collection, addDoc } from "firebase/firestore";
+
 
 const Login = () => {
 
@@ -35,20 +38,29 @@ const Login = () => {
     const [email, setEmail] = useState("");
     const [pass, setPass] = useState("");
 
-    const SignUp = () =>{
+    const SignUp = () => {
         createUserWithEmailAndPassword(auth, email, pass)
-  .then(async(userCredential) => {
-    const user = userCredential.user;
-    await updateProfile(user, {
-        displayName: name,
-    })
-    console.log(user);
-    router.replace("/(tabs)/home")
-  })
-  .catch((error) => {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-  });
+            .then(async (userCredential) => {
+                const user = userCredential.user;
+                await updateProfile(user, {
+                    displayName: name,
+                })
+                console.log(user);
+
+                const docRef = await addDoc(collection(db, "userinfo"), {
+                    id : user.uid,
+                    name: name,
+                    number: number,
+                    email: email,
+                });
+                console.log("Document written with ID: ", docRef.id);
+
+                router.replace("/(tabs)/home")
+            })
+            .catch((error) => {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+            });
 
     }
 
