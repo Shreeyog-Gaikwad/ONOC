@@ -104,18 +104,17 @@ const styles = StyleSheet.create({
     height: 1000,
   },
   imgSize: {
-    marginTop : 40,
+    marginTop : 30,
     marginBottom :10,
-   
-    width: 90,
-    height: 90,
+    width: 70,
+    height: 70,
     borderRadius : 50 ,
   },
 
   nav: {
     paddingLeft :10,
     fontSize: 16,
-    // height: 130,
+    height: 100,
     backgroundColor: "grey",
   },
 
