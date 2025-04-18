@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     height: 1000,
   },
   imgSize: {
-    marginTop : 45q,
+    marginTop : 45,
     marginBottom :10,
     width: 70,
     height: 70,
