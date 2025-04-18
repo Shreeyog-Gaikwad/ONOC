@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     height: 1000,
   },
   imgSize: {
-    marginTop : 30,
+    marginTop : 45q,
     marginBottom :10,
     width: 70,
     height: 70,
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   nav: {
     paddingLeft :10,
     fontSize: 16,
-    height: 100,
+    height: 130,
     backgroundColor: "grey",
   },
 
