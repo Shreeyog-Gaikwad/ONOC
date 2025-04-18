@@ -23,7 +23,7 @@ const home = () => {
                 />
       </View>
 
-      <View style={styles.info}>
+      <View >
         <Text style={styles.name}> Welcome,{'\n'} Custome Name !</Text>
         <Text style={styles.onoc}>One Nation One Card- bringing your identity, documents, and services into a single smartcard. Access to everything, anytime, anywhere. </Text>
       </View>
@@ -126,7 +126,6 @@ const styles = StyleSheet.create({
   info :{
     fontSize : 16,
     color : "black",
-
   },
   name:{
     marginTop : 5,
@@ -144,6 +143,7 @@ const styles = StyleSheet.create({
     display: "flex",
     flexDirection: "row",
     flexWrap: "wrap",
+    height: '55%'
     
   },
   box: {
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     gap: 10,
     height: 45,
     marginLeft: 25,
-    marginTop: 10,
+    marginTop: -100,
   },
   send: {
     padding: 10,
