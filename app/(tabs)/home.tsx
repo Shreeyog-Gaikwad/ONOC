@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Image} from "react-native";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     
   },
   box: {
-    height: '18%',
+    height: '17%',
     width: '30%',
     margin: 5,
     padding :9,
