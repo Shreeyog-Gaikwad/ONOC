@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
@@ -16,9 +16,11 @@ const home = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#3629B7" />
+      <StatusBar backgroundColor="#3629B7"/>
       <View style={styles.nav}>
-        <Text>Navbar</Text>
+      <Image source={require("../../assets/images/ONOC.png")}
+                  style={styles.imgSize}
+                />
       </View>
 
       <View style={styles.boxContainer}>
@@ -101,16 +103,24 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     height: 1000,
   },
+  imgSize: {
+    marginTop : 40,
+    marginBottom :10,
+   
+    width: 90,
+    height: 90,
+    borderRadius : 50 ,
+  },
 
   nav: {
+    paddingLeft :10,
     fontSize: 16,
-    height: 100,
-    color: "white",
-    backgroundColor: "black",
+    // height: 130,
+    backgroundColor: "grey",
   },
 
   boxContainer: {
-    marginTop: 30,
+    marginTop: 15,
     marginLeft: 10,
     display: "flex",
     flexDirection: "row",
@@ -137,7 +147,7 @@ const styles = StyleSheet.create({
     gap: 10,
     height: 45,
     marginLeft: 25,
-    marginTop: 60,
+    marginTop: 30,
   },
   send: {
     padding: 10,
