@@ -18,7 +18,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#3629B7', 
+        tabBarActiveTintColor: 'white', 
         tabBarInactiveTintColor: "gray",
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
@@ -35,7 +35,7 @@ export default function TabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ focused }) => (
-            <Entypo name="home" size={24} color={focused ? "#3629B7" : "black"} />
+            <Entypo name="home" size={24} color={focused ? "white" : "grey"} />
           ),
         }}
       />
@@ -44,7 +44,7 @@ export default function TabLayout() {
         options={{
           title: "Notifications",
           tabBarIcon: ({focused}) => (
-            <Ionicons name="notifications" size={24} color={focused ? "#3629B7" : "black"} />
+            <Ionicons name="notifications" size={24} color={focused ?  "white" : "grey"} />
           ),
         }}
       />
@@ -53,7 +53,7 @@ export default function TabLayout() {
         name="history"
         options={{
           title: "History",
-          tabBarIcon: ({focused}) => <Fontisto name="history" size={24} color={focused ? "#3629B7" : "black"} />,
+          tabBarIcon: ({focused}) => <Fontisto name="history" size={24} color={focused ?  "white" : "grey"} />,
         }}
       />
 
@@ -61,7 +61,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({focused}) => <FontAwesome name="user" size={24} color={focused ? "#3629B7" : "black"} />,
+          tabBarIcon: ({focused}) => <FontAwesome name="user" size={24} color={focused ?  "white" : "grey"} />,
         }}
       />
     </Tabs>
