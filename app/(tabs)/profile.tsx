@@ -5,8 +5,8 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import ProfileInfo from "@/components/Profile/profile";
-import { IconProps } from "@expo/vector-icons/build/createIconSet";
-import { IconSymbol } from "@/components/ui/IconSymbol.ios";
+import { Ionicons } from '@expo/vector-icons';
+
 
 
 const profile = () => {
@@ -51,12 +51,14 @@ const profile = () => {
           <View style={styles.menuWrapper}>
             <TouchableOpacity onPress={()=>{}}>
               <View style={styles.menuItems}>
+              <Ionicons name="information-circle-outline" size={24} color="black" />
                 <Text style={styles.menuText}>About</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={()=>{}}>
               <View style={styles.menuItems}>
+              <Ionicons name="help-circle-outline" size={24} color="black" />
                 <Text style={styles.menuText}>Help</Text>
               </View>
             </TouchableOpacity>
@@ -64,6 +66,7 @@ const profile = () => {
 
             <TouchableOpacity onPress={()=>{}}>
               <View style={styles.menuItems}>
+              <Ionicons name="settings" size={25} color="black" />
                 <Text style={styles.menuText}>Setting</Text>
               </View>
             </TouchableOpacity>
@@ -135,12 +138,15 @@ const styles = StyleSheet.create({
   },
   menuWrapper: {
     marginTop: 10,
+    display : 'flex',
+    justifyContent : 'center',
     padding:10,
   },
   menuItems: {
     flexDirection: "row",
+    gap : 6,
     paddingVertical: 15,
-    paddingHorizontal: 30,
+    paddingHorizontal: 15,
   },
   menuText: {
     fontSize: 16,
