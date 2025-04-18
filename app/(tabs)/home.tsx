@@ -23,6 +23,11 @@ const home = () => {
                 />
       </View>
 
+      <View style={styles.info}>
+        <Text style={styles.name}> Welcome,{'\n'} Custome Name !</Text>
+        <Text style={styles.onoc}>One Nation One Card- bringing your identity, documents, and services into a single smartcard. Access to everything, anytime, anywhere. </Text>
+      </View>
+
       <View style={styles.boxContainer}>
         <TouchableOpacity style={styles.box}>
           <Ionicons name="finger-print" size={36} color="black" />
@@ -114,24 +119,39 @@ const styles = StyleSheet.create({
   nav: {
     paddingLeft :10,
     fontSize: 16,
-    height: 130,
+    // height: 130,
     backgroundColor: "grey",
   },
 
+  info :{
+    fontSize : 16,
+    color : "black",
+
+  },
+  name:{
+    marginTop : 5,
+    paddingLeft : 15,
+    fontSize : 25,
+  },
+  onoc :{
+    margin:5,
+    paddingLeft: 15,
+    fontSize : 13,
+  },
   boxContainer: {
     marginTop: 15,
-    marginLeft: 10,
+    marginLeft : 10,
     display: "flex",
     flexDirection: "row",
     flexWrap: "wrap",
     
   },
   box: {
-    height: 100,
-    width: 100,
-    margin: 15,
+    height: '18%',
+    width: '30%',
+    margin: 5,
     padding :9,
-    gap: 4,
+    gap: 3,
     display:'flex',
     alignItems: "center",
     justifyContent: "space-evenly",
@@ -146,7 +166,7 @@ const styles = StyleSheet.create({
     gap: 10,
     height: 45,
     marginLeft: 25,
-    marginTop: 30,
+    marginTop: 10,
   },
   send: {
     padding: 10,
