@@ -54,7 +54,7 @@ const home = () => {
 
         <TouchableOpacity style={styles.box}>
         <Ionicons name="document-text-outline" size={30} color="black" />
-        <Text>Birth Certificate</Text>
+        <Text> Birth Certificate</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.box}>
         <MaterialCommunityIcons name="certificate-outline" size={34} color="black" />
