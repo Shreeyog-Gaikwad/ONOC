@@ -126,8 +126,10 @@ const styles = StyleSheet.create({
     display:'flex',
     alignItems: "center",
     justifyContent: "space-evenly",
-    borderRadius: 50,
-    backgroundColor: "grey",
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#0077B6',
+    // backgroundColor: "grey",
   },
   btn: {
     display: "flex",
