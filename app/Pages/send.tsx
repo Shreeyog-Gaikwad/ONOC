@@ -28,7 +28,7 @@ const send = () => {
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={{ fontWeight: 'bold', fontSize: 18 }}>Phone Contacts:</Text>
+      <Text style={{ fontWeight: 'bold', fontSize: 18 }}>Phones Contacts:</Text>
       <FlatList
         data={contacts}
         keyExtractor={(item) => item.id}
