@@ -53,5 +53,16 @@
     "react-test-renderer": "18.3.1",
     "typescript": "^5.3.3"
   },
-  "private": true
+  "private": true,
+  "description": "This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shreeyog-Gaikwad/ONOC.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Shreeyog-Gaikwad/ONOC/issues"
+  },
+  "homepage": "https://github.com/Shreeyog-Gaikwad/ONOC#readme"
 }
