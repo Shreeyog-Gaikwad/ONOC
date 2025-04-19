@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View, Image} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
@@ -16,16 +16,20 @@ const home = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#3629B7"/>
+      <StatusBar backgroundColor="#3629B7" />
       <View style={styles.nav}>
-      <Image source={require("../../assets/images/ONOC.png")}
-                  style={styles.imgSize}
-                />
+        <Image
+          source={require("../../assets/images/ONOC.png")}
+          style={styles.imgSize}
+        />
+        <Text style={styles.onoc}>
+          One Nation One Card- bringing your identity, documents,{"\n"} and services
+          into a single smartcard.{"\n"} Access to everything, anytime, anywhere.{" "}
+        </Text>
       </View>
 
-      <View >
-        <Text style={styles.name}> Welcome,{'\n'} Custome Name !</Text>
-        <Text style={styles.onoc}>One Nation One Card- bringing your identity, documents, and services into a single smartcard. Access to everything, anytime, anywhere. </Text>
+      <View>
+        <Text style={styles.name}> Welcome,{"\n"} Customer Name !</Text>
       </View>
 
       <View style={styles.boxContainer}>
@@ -55,26 +59,33 @@ const home = () => {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.box}>
-        <MaterialCommunityIcons name="food-variant" size={24} color="black" />
-        <Text>Ration Card</Text>
+          <MaterialCommunityIcons name="food-variant" size={24} color="black" />
+          <Text>Ration Card</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.box}>
-        <Ionicons name="document-text-outline" size={30} color="black" />
-        <Text> Birth Certificate</Text>
+          <Ionicons name="document-text-outline" size={30} color="black" />
+          <Text> Birth Certificate</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.box}>
-        <MaterialCommunityIcons name="certificate-outline" size={34} color="black" />
-        <Text>SSC Marksheet</Text>
+          <MaterialCommunityIcons
+            name="certificate-outline"
+            size={34}
+            color="black"
+          />
+          <Text>SSC Marksheet</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.box}>
-        <MaterialCommunityIcons name="school-outline" size={34} color="black" />
-        <Text>HSC Marksheet</Text>
+          <MaterialCommunityIcons
+            name="school-outline"
+            size={34}
+            color="black"
+          />
+          <Text>HSC Marksheet</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.box}>
-        <MaterialIcons name="folder" size={34} color="black" />
-        <Text>Other</Text>
-
+          <MaterialIcons name="folder" size={34} color="black" />
+          <Text>Other</Text>
         </TouchableOpacity>
       </View>
 
@@ -109,55 +120,62 @@ const styles = StyleSheet.create({
     height: 1000,
   },
   imgSize: {
-    marginTop : 45,
-    marginBottom :10,
+    marginTop: 45,
+    marginBottom: 10,
     width: 70,
     height: 70,
-    borderRadius : 50 ,
+    borderRadius: 50,
+    marginLeft: 25,
   },
 
   nav: {
-    paddingLeft :10,
+    paddingVertical: 10,
     fontSize: 16,
+    width: '100%',
     // height: 130,
-    backgroundColor: "grey",
+    backgroundColor: "#e0b72d",
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
   },
 
-  info :{
-    fontSize : 16,
-    color : "black",
+  info: {
+    fontSize: 16,
+    color: "black",
   },
-  name:{
-    marginTop : 5,
-    paddingLeft : 15,
-    fontSize : 25,
-  },
-  onoc :{
-    margin:5,
+  name: {
+    marginTop: 5,
     paddingLeft: 15,
-    fontSize : 13,
+    fontSize: 25,
+  },
+  onoc: {
+    fontSize: 10,
+    paddingRight: 40,
+    textAlign: 'left',
+    marginTop: 30,
   },
   boxContainer: {
     marginTop: 15,
-    marginLeft : 10,
+    marginLeft: 10,
     display: "flex",
     flexDirection: "row",
     flexWrap: "wrap",
-    height: '55%'
-    
+    height: "55%",
   },
   box: {
-    height: '17%',
-    width: '30%',
+    height: "17%",
+    width: "30%",
     margin: 5,
-    padding :9,
+    padding: 9,
     gap: 3,
-    display:'flex',
+    display: "flex",
     alignItems: "center",
     justifyContent: "space-evenly",
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#0077B6',
+    borderColor: "#0077B6",
     // backgroundColor: "grey",
   },
   btn: {
@@ -170,18 +188,18 @@ const styles = StyleSheet.create({
   },
   send: {
     padding: 10,
-    color :'white',
-    width : 60,
+    color: "white",
+    width: 60,
     display: "flex",
-    alignItems : 'center',
-    borderRadius : 10,
+    alignItems: "center",
+    borderRadius: 10,
     backgroundColor: "rgb(77, 156, 198)",
   },
   req: {
     padding: 10,
-    borderRadius :10,
+    borderRadius: 10,
     display: "flex",
-    alignItems : 'center',
+    alignItems: "center",
     backgroundColor: "rgb(77, 156, 198)",
   },
 });
