@@ -1,12 +1,12 @@
-import { StyleSheet, Text, View, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Keyboard, ScrollView } from 'react-native'
+import { StyleSheet, Text, View, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Keyboard, ScrollView, ToastAndroid } from 'react-native'
 import React, { useState, useEffect } from 'react'
 import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter, useNavigation } from "expo-router";
 import { auth, db } from '../../../config/FirebaseConfig';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-
+import { createUserWithEmailAndPassword, updateProfile} from 'firebase/auth'
 import { collection, addDoc } from "firebase/firestore";
+import { query, where, getDocs } from "firebase/firestore";
 
 
 const Login = () => {
@@ -37,21 +37,49 @@ const Login = () => {
     const [number, setNumber] = useState("");
     const [email, setEmail] = useState("");
     const [pass, setPass] = useState("");
+    const [username, setUsername] = useState("");
 
-    const SignUp = () => {
+    const SignUp = async () => {
+
+        if (!name || !username || !email || !pass || !number) {
+            ToastAndroid.show("Please fill all the fields", ToastAndroid.SHORT);
+            return;
+        }
+
+        const checkField = async (field, value) => {
+            const q = query(collection(db, "userinfo"), where(field, "==", value));
+            const snapshot = await getDocs(q);
+            return !snapshot.empty;
+        };
+
+        if (await checkField("username", username)) {
+            ToastAndroid.show("Username already taken.", ToastAndroid.SHORT);
+            return;
+        }
+
+        if (await checkField("email", email)) {
+            ToastAndroid.show("Email already in use.", ToastAndroid.SHORT);
+            return;
+        }
+
+        if (await checkField("number", number)) {
+            ToastAndroid.show("Phone number already registered.", ToastAndroid.SHORT);
+            return;
+        }
+
         createUserWithEmailAndPassword(auth, email, pass)
             .then(async (userCredential) => {
                 const user = userCredential.user;
                 await updateProfile(user, {
                     displayName: name,
                 })
-                console.log(user);
-
+                
                 const docRef = await addDoc(collection(db, "userinfo"), {
-                    id : user.uid,
+                    id: user.uid,
                     name: name,
                     number: number,
                     email: email,
+                    username: username,
                 });
                 console.log("Document written with ID: ", docRef.id);
 
@@ -61,7 +89,6 @@ const Login = () => {
                 const errorCode = error.code;
                 const errorMessage = error.message;
             });
-
     }
 
     return (
@@ -89,7 +116,21 @@ const Login = () => {
                         <View style={styles.inputContainerWrapper}>
                             <View style={styles.inputContainer}>
                                 <Text style={styles.inputContainerTxt}>Name</Text>
-                                <TextInput style={styles.input} placeholder="Enter your Full Name" onChangeText={(value) => setName(value)} />
+                                <TextInput style={styles.input} placeholder="Enter your Full Name" onChangeText={(value) => {
+                                    setName(value);
+                                    if (name == "") {
+                                        setUsername("");
+                                    } else {
+                                        const base = value.toLowerCase().replace(/\s+/g, '');
+                                        const random = Math.floor(100 + Math.random() * 900); // 3-digit number
+                                        setUsername(`${base}${random}`);
+                                    }
+                                }} />
+                            </View>
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.inputContainerTxt}>Username</Text>
+                                <TextInput style={styles.input} placeholder="Enter Username to be set" value={username}
+                                    onChangeText={(value) => setUsername(value)} />
                             </View>
                             <View style={styles.inputContainer}>
                                 <Text style={styles.inputContainerTxt}>Phone Number</Text>
@@ -101,7 +142,7 @@ const Login = () => {
                             </View>
                             <View style={styles.inputContainer}>
                                 <Text style={styles.inputContainerTxt}>Password</Text>
-                                <TextInput style={styles.input} placeholder="Enter your Password" secureTextEntry={true} onChangeText={(value) => setPass(value)} />
+                                <TextInput style={styles.input} placeholder="Enter Password" secureTextEntry={true} onChangeText={(value) => setPass(value)} />
                             </View>
                             <TouchableOpacity style={styles.login} onPress={SignUp} >
                                 <Text style={styles.logintxt}>Create Account </Text>
@@ -113,13 +154,12 @@ const Login = () => {
                                     <Text style={styles.signuptxt}>Login</Text>
                                 </TouchableOpacity>
                             </View>
-
-
                         </View>
                     </View>
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
+
 
     )
 }
@@ -163,26 +203,27 @@ const styles = StyleSheet.create({
     },
     ImageView: {
         marginRight: 20,
-        marginTop: 15,
+        marginTop: 12,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
     },
     image: {
-        height: 110,
-        width: 170,
+        height: 90,
+        width: 150,
         borderRadius: 10,
     },
     inputContainerWrapper: {
-        marginTop: 30,
+        marginTop: 15,
         width: '90%',
     },
     inputContainer: {
-        marginVertical: 6,
+        marginVertical: 5,
     },
     inputContainerTxt: {
-        fontSize: 18,
+        fontSize: 15,
         color: '#3629B7',
+        marginLeft: 3
     },
     input: {
         borderWidth: 1,

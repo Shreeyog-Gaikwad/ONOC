@@ -10,8 +10,6 @@ import React, { useState, useEffect } from "react";
 import { auth } from "../../config/FirebaseConfig";
 import { signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import ProfileInfo from "@/components/Profile/profile";
 import { Ionicons } from "@expo/vector-icons";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/config/FirebaseConfig";
