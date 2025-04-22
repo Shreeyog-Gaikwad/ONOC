@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/config/FirebaseConfig";
 import { query, where } from "firebase/firestore";
+import Feather from '@expo/vector-icons/Feather';
 
 
 const profile = () => {
@@ -53,8 +54,6 @@ const profile = () => {
       <View>
         <Text style={styles.profileName}>PROFILE</Text>
       </View>
-      {/* <StatusBar backgroundColor="#3629B7" />
-      <Text>profile</Text> */}
       <View style={styles.userInfoSection}>
         <View>
           <Image
@@ -62,6 +61,7 @@ const profile = () => {
             style={styles.imgSize}
           />
         </View>
+        <TouchableOpacity style={styles.edit}><Feather name="edit-2" size={18} color="black" /></TouchableOpacity>
         <View style={styles.userContent}>
           <Text style={styles.title}>{currUser?.name}</Text>
           <Text style={styles.caption}>{currUser?.username}</Text>
@@ -216,7 +216,6 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 15,
     alignItems: "center",
   },
-
   info: {
     height: 60,
     width: '95%',
@@ -230,5 +229,18 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 16,
+  },
+  edit:{
+    backgroundColor:'white',
+    width: 30,
+    height: 30,
+    borderRadius: 50,
+    display:'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -30,
+    marginTop: 70,
+    borderWidth: 1,
+    borderColor: '#c6d4f5'
   }
 });
