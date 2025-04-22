@@ -15,6 +15,10 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/config/FirebaseConfig";
 import { query, where } from "firebase/firestore";
 import Feather from '@expo/vector-icons/Feather';
+import * as ImagePicker from 'expo-image-picker';
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { updateDoc, doc } from "firebase/firestore";
+
 
 
 const profile = () => {
@@ -47,6 +51,66 @@ const profile = () => {
     }
   }, [user]);
 
+  const pickAndUploadImage = async () => {
+    // Ask for permission
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Permission denied!');
+      return;
+    }
+
+    // Pick image
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const imageUri = result.assets[0].uri;
+
+      try {
+        // Upload to Firebase Storage
+        console.log("Fetching blob...");
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        console.log("Blob fetched:", blob);
+
+        const storage = getStorage();
+        const storageRef = ref(storage, `profile_pictures/${user.uid}.jpg`);
+
+        console.log("Uploading blob...");
+        const snapshot = await uploadBytes(storageRef, blob);
+        console.log("Upload complete:", snapshot);
+
+        // Get download URL
+        console.log("Getting download URL...");
+        const downloadURL = await getDownloadURL(storageRef);
+        console.log("Download URL:", downloadURL);
+
+        // Update Firestore user document
+        const q = query(collection(db, "userinfo"), where("id", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const docId = querySnapshot.docs[0].id;
+          const userDocRef = doc(db, "userinfo", docId);
+
+          await updateDoc(userDocRef, { profilePic: downloadURL });
+
+          // Update state
+          setCurrUser(prev => ({ ...prev, profilePic: downloadURL }));
+        }
+
+      } catch (error) {
+        console.error("Error uploading or getting download URL:", error);
+        // Optionally, you can add error handling UI here
+      }
+    }
+  };
+
+
   return (
     <SafeAreaView style={styles.container}>
       <View>
@@ -55,11 +119,15 @@ const profile = () => {
       <View style={styles.userInfoSection}>
         <View>
           <Image
-            source={require("../../assets/images/User.png")}
+            source={
+              currUser?.profilePic
+                ? { uri: currUser.profilePic }
+                : require("../../assets/images/User.png")
+            }
             style={styles.imgSize}
           />
         </View>
-        <TouchableOpacity style={styles.edit}><Feather name="edit-2" size={18} color="black" /></TouchableOpacity>
+        <TouchableOpacity style={styles.edit} onPress={pickAndUploadImage}><Feather name="edit-2" size={18} color="black" /></TouchableOpacity>
         <View style={styles.userContent}>
           <Text style={styles.title}>{currUser?.name}</Text>
           <Text style={styles.caption}>{currUser?.username}</Text>
@@ -228,12 +296,12 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 16,
   },
-  edit:{
-    backgroundColor:'white',
+  edit: {
+    backgroundColor: 'white',
     width: 30,
     height: 30,
     borderRadius: 50,
-    display:'flex',
+    display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: -30,
