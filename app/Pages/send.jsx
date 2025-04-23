@@ -3,7 +3,9 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, Image } 
 import * as Contacts from 'expo-contacts';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
-
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/config/FirebaseConfig';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 const send = () => {
 
@@ -12,6 +14,7 @@ const send = () => {
   const [contacts, setContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredContacts, setFilteredContacts] = useState([]);
+  const [users, setUsers] = useState([]);
 
 
   const getContacts = async () => {
@@ -24,6 +27,13 @@ const send = () => {
       const validContacts = data.filter(contact => contact.phoneNumbers?.length);
       setContacts(validContacts);
       setFilteredContacts(validContacts);
+
+      const querySnapshot = await getDocs(collection(db, 'userinfo'));
+      const firestoreUsers = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setUsers(firestoreUsers);
     } else {
       alert('Permission denied');
     }
@@ -34,15 +44,25 @@ const send = () => {
   }, []);
 
   useEffect(() => {
-    const filtered = contacts.filter(contact =>
-      contact.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredDeviceContacts = contacts.filter(contact =>
+      contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contact.phoneNumbers?.[0]?.number.includes(searchTerm)
     );
-    setFilteredContacts(filtered);
-  }, [searchTerm, contacts]);
 
+    const filteredFirestoreUsers = users.filter(user =>
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.number?.includes(searchTerm)
+    );
 
+    const formattedFirestoreUsers = filteredFirestoreUsers.map(user => ({
+      id: user.id,
+      name: user.name,
+      phoneNumbers: [{ number: user.number }],
+      isFromFirestore: true,
+    }));
 
-
+    setFilteredContacts([...filteredDeviceContacts, ...formattedFirestoreUsers]);
+  }, [searchTerm, contacts, users]);
 
 
   return (
@@ -63,7 +83,7 @@ const send = () => {
       </View>
 
       {searchTerm == "" ?
-        <View style={{ padding: 20 }}>
+        <View style={{ padding: 20, marginBottom: 20 }}>
           <FlatList
             data={contacts}
             keyExtractor={(item) => item.id}
@@ -78,14 +98,21 @@ const send = () => {
                   }
                 })}>
                   <View style={styles.contactBox}>
-                    <View style={styles.contactImage}>
-                      <Text style={styles.initial}>
-                        {item?.name?.charAt(0)?.toUpperCase()}
-                      </Text>
+                    <View style={styles.contactBx}>
+                      <View style={styles.contactImage}>
+                        <Text style={styles.initial}>
+                          {item?.name?.charAt(0)?.toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={{ marginLeft: 10 }}>
+                        <Text style={styles.name}>{item.name}</Text>
+                        <Text style={styles.contact}>{item.phoneNumbers?.[0]?.number}</Text>
+                      </View>
                     </View>
-                    <View style={{ marginLeft: 10 }}>
-                      <Text style={styles.name}>{item.name}</Text>
-                      <Text style={styles.contact}>{item.phoneNumbers?.[0]?.number}</Text>
+                    <View>
+                      <View style={styles.user}>
+                        {item.isFromFirestore ? <FontAwesome name="user" size={28} color="black" /> : <AntDesign name="contacts" size={28} color="black" />}
+                      </View>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -106,14 +133,21 @@ const send = () => {
                 }
               })}>
                 <View style={styles.contactBox}>
-                  <View style={styles.contactImage}>
-                    <Text style={styles.initial}>
-                      {item?.name?.charAt(0)?.toUpperCase()}
-                    </Text>
+                  <View style={styles.contactBx}>
+                    <View style={styles.contactImage}>
+                      <Text style={styles.initial}>
+                        {item?.name?.charAt(0)?.toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ marginLeft: 10 }}>
+                      <Text style={styles.name}>{item.name}</Text>
+                      <Text style={styles.contact}>{item.phoneNumbers?.[0]?.number}</Text>
+                    </View>
                   </View>
-                  <View style={{ marginLeft: 10 }}>
-                    <Text style={styles.name}>{item.name}</Text>
-                    <Text style={styles.contact}>{item.phoneNumbers?.[0]?.number}</Text>
+                  <View>
+                    <View style={styles.user}>
+                      {item.isFromFirestore ? <FontAwesome name="user" size={28} color="black" /> : <AntDesign name="contacts" size={28} color="black" />}
+                    </View>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -162,6 +196,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     display: 'flex',
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: "space-between"
+  },
+  contactBx: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   name: {
     fontSize: 16,
@@ -183,5 +224,6 @@ const styles = StyleSheet.create({
   initial: {
     fontSize: 20,
     fontWeight: 'bold'
-  }
+  },
+
 })
