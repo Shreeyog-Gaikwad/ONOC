@@ -16,8 +16,8 @@ import uploadDoc from "@/app/Pages/uploadDoc";
 const home = () => {
   // Dont remove this line
   const router = useRouter();
-    const user = auth.currentUser;
-    console.log(user);
+  const user = auth.currentUser;
+  console.log(user);
 
   return (
     <View style={styles.container}>
@@ -38,7 +38,10 @@ const home = () => {
       </View>
 
       <View style={styles.boxContainer} >
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+        <TouchableOpacity style={styles.box} onPress={() => router.push({
+          pathname: "/Pages/uploadDoc",
+          params: { name: "Aadhar Card" },
+        })}>
           <Ionicons name="finger-print" size={36} color="black" />
           <Text style={styles.docText}>Aadhar Card</Text>
         </TouchableOpacity>
@@ -91,13 +94,13 @@ const home = () => {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
-        <Ionicons name="home-outline" size={34} color="black" />
+          <Ionicons name="home-outline" size={34} color="black" />
 
           <Text style={styles.docText}>Domicile Certificate</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
-        <MaterialCommunityIcons name="badge-account-outline" size={34} color="black" />
+          <MaterialCommunityIcons name="badge-account-outline" size={34} color="black" />
 
           <Text style={styles.docText}>Caste certifcate</Text>
         </TouchableOpacity>
@@ -108,7 +111,6 @@ const home = () => {
         </TouchableOpacity>
       </View>
 
-      {/* You can customize the below view but dont change the links in opPress */}
       <View style={styles.btn}>
         <TouchableOpacity
           style={styles.send}
@@ -198,7 +200,7 @@ const styles = StyleSheet.create({
     // backgroundColor: "grey",
   },
   docText: {
-    textAlign : 'center',
+    textAlign: 'center',
   },
   btn: {
     display: "flex",

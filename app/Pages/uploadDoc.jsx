@@ -9,9 +9,12 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import {Avatar} from 'react-native-paper'
+import { useLocalSearchParams } from 'expo-router';
 
 export default function DocumentPickerScreen() {
-  const [doc, setDoc] = useState<DocumentPicker.DocumentPickerResult | null>(null);
+
+  const {name} = useLocalSearchParams();
+  const [doc, setDoc] = useState(true);
 
   const pickDocument = async () => {
     try {
@@ -30,12 +33,16 @@ export default function DocumentPickerScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.title}>Upload Document</Text>
 
       <TouchableOpacity style={styles.uploadBtn} onPress={pickDocument}>
         <Text style={styles.uploadText}>Choose File</Text>
       </TouchableOpacity>
+
+      <View>
+        <Text>Document Type : {name}</Text>
+      </View>
 
       {doc && (
         <View style={styles.previewBox}>
@@ -51,7 +58,9 @@ export default function DocumentPickerScreen() {
           )}
         </View>
       )}
-    </ScrollView>
+
+     
+    </View>
   );
 }
 
@@ -61,30 +70,36 @@ export default function DocumentPickerScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    alignItems: "center",
+    display: 'flex',
+    alignItems: 'center',
     backgroundColor: "#fff",
-    minHeight: "100%",
+    height: "100%",
+    width: '100%',
   },
   title: {
     fontSize: 22,
     fontWeight: "bold",
     marginBottom: 20,
+    marginTop: 50,
+    textAlign: 'center',
   },
   uploadBtn: {
     backgroundColor: "#3b82f6",
     padding: 12,
     borderRadius: 10,
     marginBottom: 20,
+    width: 150
   },
   uploadText: {
     color: "white",
     fontWeight: "600",
     fontSize: 16,
+    textAlign: 'center',
   },
   previewBox: {
-    width: "100%",
+    width: "80%",
+    height: '50%',
+    backgroundColor: 'rgb(224, 224, 224)',
     marginTop: 20,
     alignItems: "center",
   },
