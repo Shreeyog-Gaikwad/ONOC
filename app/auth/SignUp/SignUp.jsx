@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter, useNavigation } from "expo-router";
 import { auth, db } from '../../../config/FirebaseConfig';
-import { createUserWithEmailAndPassword, updateProfile} from 'firebase/auth'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { collection, addDoc } from "firebase/firestore";
 import { query, where, getDocs } from "firebase/firestore";
 
@@ -67,17 +67,33 @@ const Login = () => {
             return;
         }
 
+        if (pass.length < 6) {
+            ToastAndroid.show("Password length must be atleast 6 characters.", ToastAndroid.SHORT);
+            return;
+        }
+
+        if (number.length !== 10) {
+            ToastAndroid.show("Phone number must be exactly 10 digits.", ToastAndroid.SHORT);
+            return;
+        }
+
+        const onlyDigits = /^[0-9]+$/;
+        if (!onlyDigits.test(number)) {
+            ToastAndroid.show("Phone number must contain digits only.", ToastAndroid.SHORT);
+            return;
+        }
+
         createUserWithEmailAndPassword(auth, email, pass)
             .then(async (userCredential) => {
                 const user = userCredential.user;
                 await updateProfile(user, {
                     displayName: name,
                 })
-                
+
                 const docRef = await addDoc(collection(db, "userinfo"), {
                     id: user.uid,
                     name: name,
-                    number: number,
+                    number: "+91" + number,
                     email: email,
                     username: username,
                 });
@@ -86,8 +102,8 @@ const Login = () => {
                 router.replace("/(tabs)/home")
             })
             .catch((error) => {
-                const errorCode = error.code;
                 const errorMessage = error.message;
+                console.error("Sign up error:", errorMessage);
             });
     }
 
@@ -118,7 +134,7 @@ const Login = () => {
                                 <Text style={styles.inputContainerTxt}>Name</Text>
                                 <TextInput style={styles.input} placeholder="Enter your Full Name" onChangeText={(value) => {
                                     setName(value);
-                                    if (name == "") {
+                                    if (value === "") {
                                         setUsername("");
                                     } else {
                                         const base = value.toLowerCase().replace(/\s+/g, '');
@@ -134,7 +150,15 @@ const Login = () => {
                             </View>
                             <View style={styles.inputContainer}>
                                 <Text style={styles.inputContainerTxt}>Phone Number</Text>
-                                <TextInput style={styles.input} placeholder="Enter your Phone Number" onChangeText={(value) => setNumber(value)} />
+                                <View style={[styles.addcontainer, { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgb(211, 211, 211)' }]}>
+                                    <Text style={{ fontSize: 16, color: 'black', marginRight: 8, marginLeft: 8 }}>+91</Text>
+                                    <TextInput
+                                        style={[styles.input, { flex: 1 }]}
+                                        placeholder="Enter your Phone Number"
+                                        maxLength={10}
+                                        onChangeText={(value) => { setNumber(value) }}
+                                    />
+                                </View>
                             </View>
                             <View style={styles.inputContainer}>
                                 <Text style={styles.inputContainerTxt}>Email</Text>
@@ -271,5 +295,10 @@ const styles = StyleSheet.create({
     },
     signuptxt: {
         color: '#3629B7',
+    },
+    addcontainer: {
+        borderWidth: 1,
+        borderRadius: 10,
+        borderColor: 'grey'
     }
 })

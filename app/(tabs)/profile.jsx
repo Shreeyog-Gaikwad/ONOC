@@ -52,14 +52,12 @@ const profile = () => {
   }, [user]);
 
   const pickAndUploadImage = async () => {
-    // Ask for permission
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       alert('Permission denied!');
       return;
     }
 
-    // Pick image
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -71,7 +69,6 @@ const profile = () => {
       const imageUri = result.assets[0].uri;
 
       try {
-        // Upload to Firebase Storage
         console.log("Fetching blob...");
         const response = await fetch(imageUri);
         const blob = await response.blob();
@@ -84,12 +81,10 @@ const profile = () => {
         const snapshot = await uploadBytes(storageRef, blob);
         console.log("Upload complete:", snapshot);
 
-        // Get download URL
         console.log("Getting download URL...");
         const downloadURL = await getDownloadURL(storageRef);
         console.log("Download URL:", downloadURL);
 
-        // Update Firestore user document
         const q = query(collection(db, "userinfo"), where("id", "==", user.uid));
         const querySnapshot = await getDocs(q);
 
@@ -99,13 +94,11 @@ const profile = () => {
 
           await updateDoc(userDocRef, { profilePic: downloadURL });
 
-          // Update state
           setCurrUser(prev => ({ ...prev, profilePic: downloadURL }));
         }
 
       } catch (error) {
         console.error("Error uploading or getting download URL:", error);
-        // Optionally, you can add error handling UI here
       }
     }
   };
@@ -213,6 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "flex-start",
     margin: 10,
+    width: "100%"
   },
   title: {
     fontSize: 24,

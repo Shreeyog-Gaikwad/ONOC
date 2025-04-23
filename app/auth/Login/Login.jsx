@@ -1,10 +1,11 @@
-import { StyleSheet, Text, View, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Keyboard, Platform, ScrollView } from 'react-native'
+import { StyleSheet, Text, View, TextInput, Image, TouchableOpacity, KeyboardAvoidingView, Keyboard, ScrollView, ToastAndroid } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { StatusBar } from 'expo-status-bar';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter, useNavigation } from "expo-router";
-import { auth } from '../../../config/FirebaseConfig';
+import { auth, db } from '../../../config/FirebaseConfig';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 const Login = () => {
 
@@ -15,8 +16,41 @@ const Login = () => {
 
     const [email, setEmail] = useState("");
     const [pass, setPass] = useState("");
-    const login = () => {
-        signInWithEmailAndPassword(auth, email, pass)
+
+    const login = async () => {
+
+        if (!email || !pass) {
+            ToastAndroid.show("Please enter your email/username and password.", ToastAndroid.SHORT);
+            return;
+        }
+
+        let emailToLogin = email;
+
+        if (!email.includes('@') && !/^\d{10}$/.test(email)) {
+            const q = query(collection(db, "userinfo"), where("username", "==", email));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                emailToLogin = userData.email;
+            } else {
+                ToastAndroid.show("Invalid Username!", ToastAndroid.SHORT);
+                return;
+            }
+        }
+
+        if (/^\d{10}$/.test(email)) {
+            const q = query(collection(db, "userinfo"), where("number", "==", email));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                emailToLogin = userData.email;
+            } else {
+                ToastAndroid.show("Phone number not found!", ToastAndroid.SHORT);
+                return;
+            }
+        }
+
+        signInWithEmailAndPassword(auth, emailToLogin, pass)
             .then((userCredential) => {
                 const user = userCredential.user;
                 console.log(user);
@@ -83,7 +117,7 @@ const Login = () => {
 
                         <View style={styles.inputContainerWrapper}>
                             <View style={styles.inputContainer}>
-                                <Text style={styles.inputContainerTxt}>Email</Text>
+                                <Text style={styles.inputContainerTxt}>Email | Username | Phone</Text>
                                 <TextInput style={styles.input} placeholder="Enter your Email" onChangeText={(value) => setEmail(value)} />
                             </View>
                             <View style={styles.inputContainer}>
