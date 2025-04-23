@@ -13,9 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-<<<<<<< HEAD
-, "components/NotifiBox/Notifibox.jsx", "app/Pages/send.jsx", "app/Pages/request.jsx", "app/Pages/uploadDoc.tsx"  ]
-=======
 , "components/NotifiBox/Notifibox.jsx", "app/Pages/send.jsx", "app/Pages/request.jsx", "app/(tabs)/profile.jsx"  ]
->>>>>>> b242021389eda5fa70bf524c016bb82d08ce444e
 }
