@@ -17,7 +17,7 @@ const Login = () => {
     const [email, setEmail] = useState("");
     const [pass, setPass] = useState("");
 
-    const login = async() => {
+    const login = async () => {
 
         if (!email || !pass) {
             ToastAndroid.show("Please enter your email/username and password.", ToastAndroid.SHORT);
@@ -26,20 +26,31 @@ const Login = () => {
 
         let emailToLogin = email;
 
-        if (!email.includes('@')) {
+        if (!email.includes('@') && !/^\d{10}$/.test(email)) {
             const q = query(collection(db, "userinfo"), where("username", "==", email));
             const querySnapshot = await getDocs(q);
-
             if (!querySnapshot.empty) {
                 const userData = querySnapshot.docs[0].data();
                 emailToLogin = userData.email;
             } else {
-                ToastAndroid.show("Invalid Credentials!!", ToastAndroid.SHORT);
+                ToastAndroid.show("Invalid Username!", ToastAndroid.SHORT);
                 return;
             }
         }
 
-        signInWithEmailAndPassword(auth, email, pass)
+        if (/^\d{10}$/.test(email)) {
+            const q = query(collection(db, "userinfo"), where("number", "==", email));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                emailToLogin = userData.email;
+            } else {
+                ToastAndroid.show("Phone number not found!", ToastAndroid.SHORT);
+                return;
+            }
+        }
+
+        signInWithEmailAndPassword(auth, emailToLogin, pass)
             .then((userCredential) => {
                 const user = userCredential.user;
                 console.log(user);
@@ -106,7 +117,7 @@ const Login = () => {
 
                         <View style={styles.inputContainerWrapper}>
                             <View style={styles.inputContainer}>
-                                <Text style={styles.inputContainerTxt}>Email</Text>
+                                <Text style={styles.inputContainerTxt}>Email | Username | Phone</Text>
                                 <TextInput style={styles.input} placeholder="Enter your Email" onChangeText={(value) => setEmail(value)} />
                             </View>
                             <View style={styles.inputContainer}>
