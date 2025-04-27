@@ -10,25 +10,40 @@ import {
   FontAwesome5,
 } from "@expo/vector-icons";
 import { auth } from "@/config/FirebaseConfig";
-
+import { useState, useEffect } from "react";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const Home = () => {
   const router = useRouter();
   const user = auth.currentUser;
+  const [uploadedDocs, setUploadedDocs] = useState({})
   console.log(user);
 
+  useEffect(() => {
+    fetchUploadedDocs();
+  }, []);
+
+  const fetchUploadedDocs = async () => {
+    const docStatus = {};
+    for (let doc of documents) {
+      const url = await AsyncStorage.getItem(`uploadedImageUrl_${doc.name}`);
+      docStatus[doc.name] = !!url;
+    }
+    setUploadedDocs(docStatus);
+  };
+
   const documents = [
-    { name: "Aadhar Card", icon: <Ionicons name="finger-print" size={36} color="black" /> },
-    { name: "PAN Card", icon: <FontAwesome name="id-card" size={32} color="black" /> },
-    { name: "Driving License", icon: <MaterialIcons name="drive-eta" size={38} color="black" /> },
-    { name: "Voter ID", icon: <MaterialCommunityIcons name="vote-outline" size={32} color="black" /> },
-    { name: "Passport", icon: <FontAwesome5 name="passport" size={32} color="black" /> },
-    { name: "Ration Card", icon: <MaterialCommunityIcons name="food-variant" size={24} color="black" /> },
-    { name: "Birth Certificate", icon: <Ionicons name="document-text-outline" size={30} color="black" /> },
-    { name: "SSC Marksheet", icon: <MaterialCommunityIcons name="certificate-outline" size={34} color="black" /> },
-    { name: "HSC Marksheet", icon: <MaterialCommunityIcons name="school-outline" size={34} color="black" /> },
-    { name: "Domicile Certificate", icon: <Ionicons name="home-outline" size={34} color="black" /> },
-    { name: "Caste Certificate", icon: <MaterialCommunityIcons name="badge-account-outline" size={34} color="black" /> },
-    { name: "Other", icon: <MaterialIcons name="folder" size={34} color="black" /> },
+    { name: "Aadhar Card", lib: Ionicons, iconName: "finger-print", size: 36 },
+    { name: "PAN Card", lib: FontAwesome, iconName: "id-card", size: 32 },
+    { name: "Driving License", lib: MaterialIcons, iconName: "drive-eta", size: 38 },
+    { name: "Voter ID", lib: MaterialCommunityIcons, iconName: "vote-outline", size: 32 },
+    { name: "Passport", lib: FontAwesome5, iconName: "passport", size: 32 },
+    { name: "Ration Card", lib: MaterialCommunityIcons, iconName: "food-variant", size: 34 },
+    { name: "Birth Certificate", lib: Ionicons, iconName: "document-text-outline", size: 30 },
+    { name: "SSC Marksheet", lib: MaterialCommunityIcons, iconName: "certificate-outline", size: 34 },
+    { name: "HSC Marksheet", lib: MaterialCommunityIcons, iconName: "school-outline", size: 36 },
+    { name: "Domicile Certificate", lib: Ionicons, iconName: "home-outline", size: 34 },
+    { name: "Caste Certificate", lib: MaterialCommunityIcons, iconName: "badge-account-outline", size: 36 },
+    { name: "Other", lib: MaterialIcons, iconName: "folder", size: 34 },
   ];
 
   return (
@@ -53,20 +68,26 @@ const Home = () => {
         </View>
 
         <View style={styles.boxContainer}>
-          {documents.map((doc, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.box}
-              onPress={() => router.push({
-                pathname: "/Pages/upload",
-                params: { name: doc.name },
-              })}
-            >
-              {doc.icon}
-              <Text style={styles.docText}>{doc.name}</Text>
-            </TouchableOpacity>
-          ))}
+          {documents.map((doc, index) => {
+            const isUploaded = uploadedDocs[doc.name];
+            const iconColor = isUploaded ? "green" : "red";
+            const Icon = doc.lib;
+            return (
+              <TouchableOpacity
+                key={index}
+                style={styles.box}
+                onPress={() => router.push({
+                  pathname: "/Pages/upload",
+                  params: { name: doc.name },
+                })}
+              >
+                <Icon name={doc.iconName} size={doc.size} color={iconColor} />
+                <Text style={styles.docText}>{doc.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
+
 
         <View style={styles.btn}>
           <TouchableOpacity
@@ -115,7 +136,7 @@ const styles = StyleSheet.create({
   },
   onoc: {
     color: "white",
-    fontSize: 10,
+    fontSize: 11,
     paddingRight: 40,
     textAlign: "left",
     marginTop: 30,
@@ -125,11 +146,11 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
-    paddingTop: 20,
+    
   },
   head: {
-    marginTop: 30,
-    paddingLeft: 20,
+    marginTop: 15,
+    paddingLeft: 25,
   },
   name: {
     fontSize: 30,
@@ -139,6 +160,7 @@ const styles = StyleSheet.create({
   boxContainer: {
     marginTop: 15,
     marginLeft: 10,
+    padding : 7,
     flexDirection: "row",
     flexWrap: "wrap",
   },
@@ -152,14 +174,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-evenly",
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: "#0077B6",
+    borderColor: "black",
   },
   docText: {
     textAlign: "center",
-    fontSize: 12,
+    fontSize: 14,
   },
   btn: {
     flexDirection: "row",
+    display : 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 20,
