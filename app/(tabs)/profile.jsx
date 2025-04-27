@@ -165,7 +165,7 @@ const profile = () => {
       </View>
       <TouchableOpacity style={styles.logout} onPress={logout}>
         <View style={styles.logoutSection}>
-          <Text >Logout</Text>
+          <Text style={styles.logoutTxt}>Logout</Text>
         </View>
       </TouchableOpacity>
     </SafeAreaView>
@@ -258,9 +258,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     height: 30,
   },
+  logoutTxt: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: 'bold'
+  },
   logout: {
     backgroundColor: "red",
-    width: 100,
+    width: 150,
     height: 50,
     padding: 10,
     marginLeft: 30,
