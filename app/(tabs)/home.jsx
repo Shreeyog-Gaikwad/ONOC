@@ -12,15 +12,20 @@ import {
 import { auth } from "@/config/FirebaseConfig";
 import { useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from "@react-navigation/native";
+
+
 const Home = () => {
   const router = useRouter();
   const user = auth.currentUser;
   const [uploadedDocs, setUploadedDocs] = useState({})
   console.log(user);
 
-  useEffect(() => {
-    fetchUploadedDocs();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUploadedDocs();
+    }, [])
+  );
 
   const fetchUploadedDocs = async () => {
     const docStatus = {};
@@ -146,7 +151,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
-    
+
   },
   head: {
     marginTop: 15,
@@ -160,7 +165,7 @@ const styles = StyleSheet.create({
   boxContainer: {
     marginTop: 15,
     marginLeft: 10,
-    padding : 7,
+    padding: 7,
     flexDirection: "row",
     flexWrap: "wrap",
   },
@@ -182,7 +187,7 @@ const styles = StyleSheet.create({
   },
   btn: {
     flexDirection: "row",
-    display : 'flex',
+    display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 20,
