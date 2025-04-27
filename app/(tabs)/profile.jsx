@@ -19,13 +19,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateDoc, doc } from "firebase/firestore";
 
-
-
 const profile = () => {
   const router = useRouter();
-
   const user = auth.currentUser;
-
   const [currUser, setCurrUser] = useState([])
 
   const logout = () => {

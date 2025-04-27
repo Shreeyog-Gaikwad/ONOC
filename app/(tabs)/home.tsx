@@ -1,8 +1,8 @@
-import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, Image, Button } from "react-native";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
-
+import Upload from "@/app/Pages/upload";
 import {
   Ionicons,
   FontAwesome,
@@ -11,7 +11,8 @@ import {
   FontAwesome5,
 } from "@expo/vector-icons";
 import { auth } from "@/config/FirebaseConfig";
-import uploadDoc from "@/app/Pages/uploadDoc";
+import { push } from "expo-router/build/global-state/routing";
+
 
 const home = () => {
   // Dont remove this line
@@ -28,84 +29,200 @@ const home = () => {
           style={styles.imgSize}
         />
         <Text style={styles.onoc}>
-          One Nation One Card- bringing your identity, documents,{"\n"} and services
-          into a single smartcard.{"\n"} Access to everything, anytime, anywhere.{" "}
+          One Nation One Card- bringing your identity, documents,{"\n"} and
+          services into a single smartcard.{"\n"} Access to everything, anytime,
+          anywhere.{" "}
         </Text>
       </View>
 
       <View>
-        <Text style={styles.name}> Welcome,{"\n"}  {user?.displayName} !</Text>
+        <Text style={styles.name}>
+          {" "}
+          Welcome,{"\n"} {user?.displayName} !
+        </Text>
       </View>
 
-      <View style={styles.boxContainer} >
-        <TouchableOpacity style={styles.box} onPress={() => router.push({
-          pathname: "/Pages/uploadDoc",
-          params: { name: "Aadhar Card" },
-        })}>
+      <View style={styles.boxContainer}>
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() => router.push({
+            pathname: "/Pages/upload",
+            params: { name: "Aadhar Card" },
+          })}
+        >
           <Ionicons name="finger-print" size={36} color="black" />
           <Text style={styles.docText}>Aadhar Card</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "PAN Card" },
+            })
+          }
+        >
           <FontAwesome name="id-card" size={32} color="black" />
           <Text style={styles.docText}>PAN card</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "Driving License" },
+            })
+          }
+        >
           <MaterialIcons name="drive-eta" size={38} color="black" />
           <Text style={styles.docText}>Driving License</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "Voter ID" },
+            })
+          }
+        >
           <MaterialCommunityIcons name="vote-outline" size={32} color="black" />
           <Text style={styles.docText}>Voter ID</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "Passport" },
+            })
+          }
+        >
           <FontAwesome5 name="passport" size={32} color="black" />
           <Text style={styles.docText}>Passport</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "Ration Card" },
+            })
+          }
+        >
           <MaterialCommunityIcons name="food-variant" size={24} color="black" />
           <Text style={styles.docText}>Ration Card</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "Birth Certificate" },
+            })
+          }
+        >
           <Ionicons name="document-text-outline" size={30} color="black" />
           <Text style={styles.docText}> Birth Certificate</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "SSC Marksheet" },
+            })
+          }
+        >
           <MaterialCommunityIcons
             name="certificate-outline"
             size={34}
             color="black"
           />
-          <Text style={styles.docText} onPress={() => router.push("/Pages/uploadDoc")}>SSC Marksheet</Text>
+          <Text
+            style={styles.docText}
+            onPress={() => router.push({
+              pathname: "/Pages/upload",
+              params: { name: "SSC Marksheet" },
+            })}
+          >
+            SSC Marksheet
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "HSC Marksheet" },
+            })
+          }
+        >
           <MaterialCommunityIcons
             name="school-outline"
             size={34}
             color="black"
           />
-          <Text style={styles.docText} onPress={() => router.push("/Pages/uploadDoc")}>HSC Marksheet</Text>
+          <Text
+            style={styles.docText}
+            onPress={() => router.push({
+              pathname: "/Pages/upload",
+              params: { name: "HSC Marksheet" },
+            })}
+          >
+            HSC Marksheet
+          </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "Domicile Certificate" },
+            })
+          }
+        >
           <Ionicons name="home-outline" size={34} color="black" />
 
           <Text style={styles.docText}>Domicile Certificate</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
-          <MaterialCommunityIcons name="badge-account-outline" size={34} color="black" />
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "Caste Certificate" },
+            })
+          }
+        >
+          <MaterialCommunityIcons
+            name="badge-account-outline"
+            size={34}
+            color="black"
+          />
 
           <Text style={styles.docText}>Caste certifcate</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.box} onPress={() => router.push("/Pages/uploadDoc")}>
+        <TouchableOpacity
+          style={styles.box}
+          onPress={() =>
+            router.push({
+              pathname: "/Pages/upload",
+              params: { name: "Other" },
+            })
+          }
+        >
           <MaterialIcons name="folder" size={34} color="black" />
           <Text style={styles.docText}>Other</Text>
         </TouchableOpacity>
@@ -152,13 +269,13 @@ const styles = StyleSheet.create({
   nav: {
     paddingVertical: 10,
     fontSize: 16,
-    width: '100%',
+    width: "100%",
     // height: 130,
     backgroundColor: "#e0b72d",
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: 10,
   },
 
@@ -174,7 +291,7 @@ const styles = StyleSheet.create({
   onoc: {
     fontSize: 10,
     paddingRight: 40,
-    textAlign: 'left',
+    textAlign: "left",
     marginTop: 30,
   },
   boxContainer: {
@@ -200,7 +317,7 @@ const styles = StyleSheet.create({
     // backgroundColor: "grey",
   },
   docText: {
-    textAlign: 'center',
+    textAlign: "center",
   },
   btn: {
     display: "flex",
