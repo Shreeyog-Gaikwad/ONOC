@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   container: {
-    paddingTop: 90,
+    paddingTop: 100,
     height: "104%",
     width : "100%",
     backgroundColor: "white",
