@@ -55,8 +55,6 @@ export default function Upload() {
       console.error("Error clearing uploaded file from storage:", error);
     }
   };
-
-
   const uriToBlob = async (uri) => {
     const response = await fetch(uri);
     return await response.blob();
@@ -153,20 +151,25 @@ export default function Upload() {
       <View>
         <Text style={styles.typeText}>Document Type : {name}</Text>
       </View>
-      <View
-        style={[styles.selectbtn, { display: uploadedImageUrl ? "none" : "flex" }]}>
-        <Button title="Select & Upload Document" onPress={selectDoc} />
-      </View>
+      <TouchableOpacity
+        style={[styles.uploadBtn, { display: uploadedImageUrl ? "none" : "flex" }]}
+        onPress={selectDoc}>
+        {/* <Button title="Select & Upload Document" /> */}
+        <Text style={{ color: "white", fontWeight: "bold" , fontSize : 16 }}>Select & Upload Document</Text>
+      </TouchableOpacity>
 
-      <View
-        style={[styles.deletebtn, { display: uploadedImageUrl ? "flex" : "none" }]}>
-        <Button
+      <TouchableOpacity
+        style={[styles.deletebtn, { display: uploadedImageUrl ? "flex" : "none" }]}
+        onPress={handleDelete}
+          disabled={uploading || uploadedImageUrl === null}>
+        {/* <Button
           title="Delete Uploaded Image"
           onPress={handleDelete}
           disabled={uploading || uploadedImageUrl === null}
           color="red"
-        />
-      </View>
+        /> */}
+        <Text style={{ color: "white", fontWeight: "bold" , fontSize : 16 }}>Delete Uploaded Image</Text>
+      </TouchableOpacity>
       {uploading && (
         <ActivityIndicator
           size="large"
@@ -200,8 +203,6 @@ export default function Upload() {
 
 const styles = StyleSheet.create({
   outer :{
-    // height : '100vh',
-    // width : '100vw',
     position: 'relative',
   },
   container: {
@@ -210,7 +211,6 @@ const styles = StyleSheet.create({
     width : "100%",
     backgroundColor: "white",
     display : 'flex',
-    // justifyContent : 'center',
     alignItems: "center",
   },
   backArrow :{
@@ -238,6 +238,20 @@ const styles = StyleSheet.create({
     width : '80%',
    
   },
+  uploadBtn: {
+    backgroundColor: "#3629B7",
+    padding: 13,
+    borderRadius: 10,
+    alignItems: "center",
+    margin : 17,
+  },
+  deletebtn: {
+    backgroundColor: "red",
+    padding: 13,
+    borderRadius: 10,
+    alignItems: "center",
+    margin : 17,
+  },
   imgSize: {
     width: "100%",
     height: "80%",
@@ -247,8 +261,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
     borderRadius: 10,
   },
-  deletebtn: {
-    paddingTop : 30,
-    width : '65%',
-  },
+  
 });

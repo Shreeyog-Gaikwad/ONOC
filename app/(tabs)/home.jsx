@@ -22,11 +22,26 @@ const Home = () => {
     fetchUploadedDocs();
   }, []);
 
+  // const fetchUploadedDocs = async () => {
+  //   const docStatus = {};
+  //   for (let doc of documents) {
+  //     const url = await AsyncStorage.getItem(`uploadedImageUrl_${doc.name}`);
+  //     docStatus[doc.name] = !!url;
+  //   }
+  //   setUploadedDocs(docStatus);
+  // };
+
   const fetchUploadedDocs = async () => {
     const docStatus = {};
     for (let doc of documents) {
-      const url = await AsyncStorage.getItem(`uploadedImageUrl_${doc.name}`);
-      docStatus[doc.name] = !!url;
+      if (doc.multiUpload) {
+        const urlsJSON = await AsyncStorage.getItem(`uploadedDocuments_${doc.name}`);
+        const urls = urlsJSON ? JSON.parse(urlsJSON) : [];
+        docStatus[doc.name] = urls.length > 0;
+      } else {
+        const url = await AsyncStorage.getItem(`uploadedImageUrl_${doc.name}`);
+        docStatus[doc.name] = !!url;
+      }
     }
     setUploadedDocs(docStatus);
   };
@@ -43,7 +58,7 @@ const Home = () => {
     { name: "HSC Marksheet", lib: MaterialCommunityIcons, iconName: "school-outline", size: 36 },
     { name: "Domicile Certificate", lib: Ionicons, iconName: "home-outline", size: 34 },
     { name: "Caste Certificate", lib: MaterialCommunityIcons, iconName: "badge-account-outline", size: 36 },
-    { name: "Other", lib: MaterialIcons, iconName: "folder", size: 34 },
+    { name: "Other", lib: MaterialIcons, iconName: "folder", size: 34, multiUpload: true },
   ];
 
   return (
@@ -56,8 +71,8 @@ const Home = () => {
         />
         <Text style={styles.onoc}>
           One Nation One Card - bringing your identity, documents,{"\n"}
-          and services into a single smartcard.{"\n"}
-          Access to everything, anytime, anywhere.
+          and services into a single smartcard.{"\n"} 
+          Access to everything, anytime, anywhere.{"\n"}
         </Text>
       </View>
 
@@ -76,10 +91,24 @@ const Home = () => {
               <TouchableOpacity
                 key={index}
                 style={styles.box}
-                onPress={() => router.push({
-                  pathname: "/Pages/upload",
-                  params: { name: doc.name },
-                })}
+                // onPress={() => router.push({
+                //   pathname: "/Pages/upload",
+                //   params: { name: doc.name },
+                // })}
+
+                onPress={() => {
+                  if (doc.name === "Other") {
+                    router.push({
+                      pathname: "/Pages/otherUpload",
+                      params: { name: doc.name },
+                    });
+                  } else {
+                    router.push({
+                      pathname: "/Pages/upload",
+                      params: { name: doc.name },
+                    });
+                  }
+                }}
               >
                 <Icon name={doc.iconName} size={doc.size} color={iconColor} />
                 <Text style={styles.docText}>{doc.name}</Text>
