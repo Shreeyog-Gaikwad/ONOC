@@ -12,9 +12,11 @@ const send = () => {
   const router = useRouter();
 
   const [contacts, setContacts] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [userInContacts, setUserInContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredContacts, setFilteredContacts] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [isContact, setIsContact] = useState(false);
 
 
   const getContacts = async () => {
@@ -26,7 +28,6 @@ const send = () => {
 
       const validContacts = data.filter(contact => contact.phoneNumbers?.length);
       setContacts(validContacts);
-      setFilteredContacts(validContacts);
 
       const querySnapshot = await getDocs(collection(db, 'userinfo'));
       const firestoreUsers = querySnapshot.docs.map(doc => ({
@@ -34,9 +35,35 @@ const send = () => {
         ...doc.data(),
       }));
       setUsers(firestoreUsers);
+
+      const deviceNumbers = validContacts
+        .flatMap(contact => contact.phoneNumbers.map(p => normalizeNumber(p.number)));
+
+      const matchedUsers = firestoreUsers.filter(user =>
+        deviceNumbers.includes(normalizeNumber(user.number))
+      );
+
+      const formattedMatchedUsers = matchedUsers.map(user => ({
+        ...user,
+      }));
+
+      setUserInContacts(formattedMatchedUsers);
+
+      console.log(formattedMatchedUsers);
+
+
     } else {
       alert('Permission denied');
     }
+  };
+
+  const normalizeNumber = (number) => {
+    if (!number) return '';
+    let cleaned = number.replace(/\D/g, '');
+    if (cleaned.length > 10) {
+      cleaned = cleaned.slice(-10);
+    }
+    return cleaned;
   };
 
   useEffect(() => {
@@ -44,24 +71,22 @@ const send = () => {
   }, []);
 
   useEffect(() => {
-    const filteredDeviceContacts = contacts.filter(contact =>
-      contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contact.phoneNumbers?.[0]?.number.includes(searchTerm)
-    );
-
     const filteredFirestoreUsers = users.filter(user =>
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.number?.includes(searchTerm)
     );
 
-    const formattedFirestoreUsers = filteredFirestoreUsers.map(user => ({
-      id: user.id,
-      name: user.name,
-      phoneNumbers: [{ number: user.number }],
-      isFromFirestore: true,
-    }));
+    const formattedFirestoreUsers = filteredFirestoreUsers.map(user => {
+      const isUserInContacts = userInContacts.some(contact => contact.id === user.id);
 
-    setFilteredContacts([...filteredDeviceContacts, ...formattedFirestoreUsers]);
+      return {
+        ...user,
+        isFromFirestore: true,
+        inContact: isUserInContacts,
+      }
+    });
+
+    setFilteredContacts([...formattedFirestoreUsers]);
   }, [searchTerm, contacts, users]);
 
 
@@ -85,28 +110,34 @@ const send = () => {
       {searchTerm == "" ?
         <View style={{ padding: 20, marginBottom: 20 }}>
           <FlatList
-            data={contacts}
+            data={userInContacts}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-
-              item.phoneNumbers?.[0]?.number == null ? null :
+              item.number == null ? null :
                 <TouchableOpacity onPress={() => router.push({
                   pathname: '/Pages/selectdoc', params: {
-                    name: item.name,
-                    number: item.phoneNumbers?.[0]?.number,
-                    image: item.image?.uri
+                    ...item
                   }
                 })}>
                   <View style={styles.contactBox}>
                     <View style={styles.contactBx}>
                       <View style={styles.contactImage}>
                         <Text style={styles.initial}>
-                          {item?.name?.charAt(0)?.toUpperCase()}
+                          {item.profilePic ? (
+                            <Image
+                              source={{ uri: item.profilePic }}
+                              style={styles.profilePic}
+                            />
+                          ) : (
+                            <Text style={styles.initial}>
+                              {item?.name?.charAt(0)?.toUpperCase()}
+                            </Text>
+                          )}
                         </Text>
                       </View>
                       <View style={{ marginLeft: 10 }}>
                         <Text style={styles.name}>{item.name}</Text>
-                        <Text style={styles.contact}>{item.phoneNumbers?.[0]?.number}</Text>
+                        <Text style={styles.contact}>{item.username}</Text>
                       </View>
                     </View>
                     <View>
@@ -136,17 +167,26 @@ const send = () => {
                   <View style={styles.contactBx}>
                     <View style={styles.contactImage}>
                       <Text style={styles.initial}>
-                        {item?.name?.charAt(0)?.toUpperCase()}
+                        {item.profilePic ? (
+                          <Image
+                            source={{ uri: item.profilePic }}
+                            style={styles.profilePic}
+                          />
+                        ) : (
+                          <Text style={styles.initial}>
+                            {item?.name?.charAt(0)?.toUpperCase()}
+                          </Text>
+                        )}
                       </Text>
                     </View>
                     <View style={{ marginLeft: 10 }}>
                       <Text style={styles.name}>{item.name}</Text>
-                      <Text style={styles.contact}>{item.phoneNumbers?.[0]?.number}</Text>
+                      <Text style={styles.contact}>{item.username}</Text>
                     </View>
                   </View>
                   <View>
                     <View style={styles.user}>
-                      {item.isFromFirestore ? <FontAwesome name="user" size={28} color="black" /> : <AntDesign name="contacts" size={28} color="black" />}
+                      {item.inContact ? <AntDesign name="contacts" size={28} color="black" /> : <FontAwesome name="user" size={28} color="black" />}
                     </View>
                   </View>
                 </View>
@@ -225,5 +265,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold'
   },
+  profilePic:{
+    width: 40,
+    height: 40,
+    borderRadius: 50,
+  }
 
 })

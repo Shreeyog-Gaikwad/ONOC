@@ -93,7 +93,7 @@ const Login = () => {
                 const docRef = await addDoc(collection(db, "userinfo"), {
                     id: user.uid,
                     name: name,
-                    number: "+91" + number,
+                    number: normalizeNumber(number),
                     email: email,
                     username: username,
                 });
@@ -105,7 +105,17 @@ const Login = () => {
                 const errorMessage = error.message;
                 console.error("Sign up error:", errorMessage);
             });
+
     }
+
+    const normalizeNumber = (number) => {
+        if (!number) return '';
+        let cleaned = number.replace(/\D/g, ''); 
+        if (cleaned.length > 10) {
+          cleaned = cleaned.slice(-10);
+        }
+        return cleaned;
+      };
 
     return (
 
