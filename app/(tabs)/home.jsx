@@ -2,6 +2,8 @@ import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
+import { getMetadata, ref } from "firebase/storage";
+import { storage } from "@/config/FirebaseConfig";
 import {
   Ionicons,
   FontAwesome,
@@ -13,43 +15,16 @@ import { auth } from "@/config/FirebaseConfig";
 import { useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from "@react-navigation/native";
+import { listAll } from "firebase/storage";
+
 
 
 const Home = () => {
   const router = useRouter();
   const user = auth.currentUser;
   const [uploadedDocs, setUploadedDocs] = useState({})
+  const [loading, setLoading] = useState(true);
   console.log(user);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchUploadedDocs();
-    }, [])
-  );
-
-  // const fetchUploadedDocs = async () => {
-  //   const docStatus = {};
-  //   for (let doc of documents) {
-  //     const url = await AsyncStorage.getItem(`uploadedImageUrl_${doc.name}`);
-  //     docStatus[doc.name] = !!url;
-  //   }
-  //   setUploadedDocs(docStatus);
-  // };
-
-  const fetchUploadedDocs = async () => {
-    const docStatus = {};
-    for (let doc of documents) {
-      if (doc.multiUpload) {
-        const urlsJSON = await AsyncStorage.getItem(`uploadedDocuments_${doc.name}`);
-        const urls = urlsJSON ? JSON.parse(urlsJSON) : [];
-        docStatus[doc.name] = urls.length > 0;
-      } else {
-        const url = await AsyncStorage.getItem(`uploadedImageUrl_${doc.name}`);
-        docStatus[doc.name] = !!url;
-      }
-    }
-    setUploadedDocs(docStatus);
-  };
 
   const documents = [
     { name: "Aadhar Card", lib: Ionicons, iconName: "finger-print", size: 36 },
@@ -66,6 +41,90 @@ const Home = () => {
     { name: "Other", lib: MaterialIcons, iconName: "folder", size: 34, multiUpload: true },
   ];
 
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+  
+      const checkDocs = async () => {
+        if (isActive) {
+          await fetchUploadedDocs();
+        }
+      };
+      checkDocs();
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
+  
+  const fetchUploadedDocs = async () => {
+    setLoading(true);
+    const docStatus = {};
+  
+    for (let doc of documents) {
+      if (doc.multiUpload) {
+        const urlsJSON = await AsyncStorage.getItem(`uploadedDocuments_${doc.name}`);
+        const urls = urlsJSON ? JSON.parse(urlsJSON) : [];
+  
+        let validUrls = [];
+  
+        for (let url of urls) {
+          try {
+            const fileRef = ref(storage, url);
+            await getMetadata(fileRef);
+            validUrls.push(url);
+          } catch (error) {
+            console.log(`Deleted or invalid: ${url}`);
+          }
+        }
+  
+        docStatus[doc.name] = validUrls.length > 0;
+      } else {
+        const url = await AsyncStorage.getItem(`uploadedImageUrl_${doc.name}`);
+        if (url) {
+          try {
+            const fileRef = ref(storage, url);
+            await getMetadata(fileRef);
+            docStatus[doc.name] = true;
+          } catch (err) {
+            docStatus[doc.name] = false;
+            await AsyncStorage.removeItem(`uploadedImageUrl_${doc.name}`);
+          }
+        } else {
+          docStatus[doc.name] = false;
+        }
+      }
+    }
+    setUploadedDocs(docStatus);
+    setLoading(false);
+  };
+  {loading ? (
+    <Text style={{ textAlign: 'center', marginTop: 20 }}>Checking documents...</Text>
+  ) : (
+    <View style={styles.boxContainer}>
+      {documents.map((doc, index) => {
+        const isUploaded = uploadedDocs[doc.name];
+        const iconColor = isUploaded ? "green" : "red";
+        const Icon = doc.lib;
+        return (
+          <TouchableOpacity
+            key={index}
+            style={styles.box}
+            onPress={() => {
+              router.push({
+                pathname: doc.name === "Other" ? "/Pages/otherUpload" : "/Pages/upload",
+                params: { name: doc.name },
+              });
+            }}
+          >
+            <Icon name={doc.iconName} size={doc.size} color={iconColor} />
+            <Text style={styles.docText}>{doc.name}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  )}
+  
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#3629B7" />
@@ -96,11 +155,6 @@ const Home = () => {
               <TouchableOpacity
                 key={index}
                 style={styles.box}
-                // onPress={() => router.push({
-                //   pathname: "/Pages/upload",
-                //   params: { name: doc.name },
-                // })}
-
                 onPress={() => {
                   if (doc.name === "Other") {
                     router.push({

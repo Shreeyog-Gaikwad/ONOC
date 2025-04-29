@@ -1,87 +1,124 @@
 import React, { useState, useEffect } from "react";
-import { View,Text,StyleSheet,Button,Image,ActivityIndicator,TouchableOpacity,} from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Button,
+  Image,
+  ActivityIndicator,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 import * as DocumentPicker from "expo-document-picker";
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { getStorage, ref, uploadBytes, getDownloadURL, uploadString,} from "firebase/storage";
-import * as FileSystem from "expo-file-system";
-import { router, useRouter } from "expo-router";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+  listAll,
+  getMetadata,
+} from "firebase/storage";
 import { auth } from "../../config/FirebaseConfig";
 import { useLocalSearchParams } from "expo-router";
-import { Alert } from "react-native";
 import * as WebBrowser from "expo-web-browser";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
+
 
 export default function Upload() {
   const { name } = useLocalSearchParams();
   const [uploading, setUploading] = useState(false);
   const [uploadedFileType, setUploadedFileType] = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
+  const [loadingFile, setLoadingFile] = useState(true);
+  
 
-  useEffect(() => {
-    loadUploadedFile();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchUploadedFile();
+    }, [])
+  );
+  
 
-  const isPdf = uploadedImageUrl?.toLowerCase().includes('.pdf');
+  const isPdf = uploadedImageUrl?.toLowerCase().includes(".pdf");
 
-  const loadUploadedFile = async () => {
+  const fetchUploadedFile = async () => {
     try {
-      const savedUrl = await AsyncStorage.getItem(`uploadedImageUrl_${name}`);
-      const savedType = await AsyncStorage.getItem(`uploadedFileType_${name}`);
-      if (savedUrl) {
-        setUploadedImageUrl(savedUrl);
-        setUploadedFileType(savedType);
+      setLoadingFile(true);
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const storage = getStorage();
+      const userFolderRef = ref(storage, `uploads/${user.uid}/${name}/`);
+      const result = await listAll(userFolderRef);
+
+      if (result.items.length > 0) {
+        const fileRef = result.items[0];
+        const url = await getDownloadURL(fileRef);
+        const metadata = await getMetadata(fileRef);
+        setUploadedImageUrl(url);
+        setUploadedFileType(metadata.contentType);
+      } else {
+        setUploadedImageUrl(null);
+        setUploadedFileType(null);
       }
     } catch (error) {
-      console.error("Error loading uploaded file from storage:", error);
+      console.error("Error fetching uploaded file:", error);
+    } finally {
+      setLoadingFile(false);
     }
   };
 
-  const saveUploadedFile = async (url, type) => {
-    try {
-      await AsyncStorage.setItem(`uploadedImageUrl_${name}`, url);
-      if (type) {
-        await AsyncStorage.setItem(`uploadedFileType_${name}`, type);
-      }
-    } catch (error) {
-      console.error("Error saving uploaded file to storage:", error);
-    }
-  };
-
-  const clearUploadedFile = async () => {
-    try {
-      await AsyncStorage.removeItem(`uploadedImageUrl_${name}`);
-      await AsyncStorage.removeItem(`uploadedFileType_${name}`);
-    } catch (error) {
-      console.error("Error clearing uploaded file from storage:", error);
-    }
-  };
   const uriToBlob = async (uri) => {
     const response = await fetch(uri);
     return await response.blob();
   };
+
   const handleDelete = () => {
     Alert.alert(
-      "Delete Image",
-      "Are you sure you want to delete this image?",
+      "Delete Document",
+      "Are you sure you want to delete this document?",
       [
-        {
-          text: "Cancel",
-          onPress: () => console.log("Deletion canceled"),
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
-          onPress: async () => {
-            setUploadedImageUrl(null);
-            await clearUploadedFile();
-            console.log("Image deleted successfully.");
-          },
           style: "destructive",
+          onPress: async () => {
+            const user = auth.currentUser;
+            if (!user || !uploadedImageUrl) return;
+  
+            try {
+              setUploading(true);
+              setUploadedImageUrl(null);
+              setUploadedFileType(null);
+  
+              const pathMatch = uploadedImageUrl.match(/\/o\/(.*?)\?/);
+              const filePath = pathMatch
+                ? decodeURIComponent(pathMatch[1])
+                : null;
+  
+              if (filePath) {
+                const storage = getStorage();
+                const fileRef = ref(storage, filePath);
+                await deleteObject(fileRef);
+                console.log("File deleted.");
+              }
+            } catch (error) {
+              console.error("Error deleting file:", error);
+              await fetchUploadedFile();
+            } finally {
+              setUploading(false);
+            }
+          },
         },
       ],
       { cancelable: true }
     );
   };
+  
 
   const handleViewPdf = async () => {
     if (uploadedImageUrl) {
@@ -90,136 +127,146 @@ export default function Upload() {
   };
 
   const selectDoc = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      console.log("No user logged in.");
+      return;
+    }
+  
     try {
       setUploading(true);
-
+  
       const result = await DocumentPicker.getDocumentAsync({
         type: ["image/*", "application/pdf"],
         copyToCacheDirectory: true,
         multiple: false,
       });
-
+  
       if (result.type === "cancel") {
-        console.log("User cancelled the upload.");
-        setUploading(false);
+        console.log("User cancelled document picker.");
         return;
       }
-      const fileUri =
-        result.assets && result.assets.length > 0 ? result.assets[0].uri : null;
-      const fileMimeType =
-        result.assets && result.assets.length > 0
-          ? result.assets[0].mimeType
-          : null;
-
-      if (!fileUri) {
-        console.log("No file selected or URI is missing.");
-        setUploading(false);
+  
+      const fileUri = result.assets?.[0]?.uri;
+      const fileMimeType = result.assets?.[0]?.mimeType;
+      const fileName = result.assets?.[0]?.name;
+  
+      if (!fileUri || !fileName) {
+        console.log("Invalid file selected.");
         return;
       }
-
-      console.log("Document selected", result);
-
+  
+      const tempUrl = fileUri;
+      setUploadedImageUrl(tempUrl);
+      setUploadedFileType(fileMimeType);
+  
       const storage = getStorage();
-      const fileName = `uploads/${Date.now()}_${result.assets[0].name}`;
-      const storageRef = ref(storage, fileName);
+      const storageRef = ref(
+        storage,
+        `uploads/${user.uid}/${name}/${Date.now()}_${fileName}`
+      );
       const blob = await uriToBlob(fileUri);
-
       await uploadBytes(storageRef, blob);
-      console.log("Upload complete (Blob)");
-
+  
       const downloadURL = await getDownloadURL(storageRef);
-      console.log("File available at", downloadURL);
-
       setUploadedImageUrl(downloadURL);
       setUploadedFileType(fileMimeType);
-      await saveUploadedFile(downloadURL, fileMimeType);
     } catch (err) {
-      console.error("Error picking/uploading document:", err);
+      console.error("Upload error:", err);
     } finally {
       setUploading(false);
     }
   };
+  
 
   return (
     <View style={styles.outer}>
-     <TouchableOpacity style={styles.backArrow}>
-    <Ionicons name="arrow-back" size={30} color="black" onPress={()=> {router.back()}} />
-
-    </TouchableOpacity>
-    <View style={styles.container}>
-      <Text style={styles.uploadText}>UPLOAD DOCUMENT PAGE</Text>
-      <View>
-        <Text style={styles.typeText}>Document Type : {name}</Text>
-      </View>
-      <TouchableOpacity
-        style={[styles.uploadBtn, { display: uploadedImageUrl ? "none" : "flex" }]}
-        onPress={selectDoc}>
-        {/* <Button title="Select & Upload Document" /> */}
-        <Text style={{ color: "white", fontWeight: "bold" , fontSize : 16 }}>Select & Upload Document</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.deletebtn, { display: uploadedImageUrl ? "flex" : "none" }]}
-        onPress={handleDelete}
-          disabled={uploading || uploadedImageUrl === null}>
-        {/* <Button
-          title="Delete Uploaded Image"
-          onPress={handleDelete}
-          disabled={uploading || uploadedImageUrl === null}
-          color="red"
-        /> */}
-        <Text style={{ color: "white", fontWeight: "bold" , fontSize : 16 }}>Delete Uploaded Image</Text>
-      </TouchableOpacity>
-      {uploading && (
-        <ActivityIndicator
-          size="large"
-          color="#0000ff"
-          style={{ marginTop: 20 }}
+      <TouchableOpacity style={styles.backArrow}>
+        <Ionicons
+          name="arrow-back"
+          size={30}
+          color="black"
+          onPress={() => {
+            router.back();
+          }}
         />
-      )}
+      </TouchableOpacity>
 
-      {uploadedImageUrl && (
-        <View style={styles.imgSize}>
-          {!isPdf ? (
-            <Image
-              source={{ uri: uploadedImageUrl }}
-              style={styles.imgSize}
-              resizeMode="contain"
-            />
-          ) : (
-            <View style={{ alignItes: "center", marginTop: 20 }}>
-              <Text style={{ fontSize: 18, marginBottom: 10 }}>
-                PDF Document Uploaded 📄
-              </Text>
-              <Button title="View PDF" onPress={handleViewPdf} />
-            </View>
-          )}
-        </View>
-      )}
-    </View>
+      <View style={styles.container}>
+        <Text style={styles.uploadText}>UPLOAD DOCUMENT PAGE</Text>
+        <Text style={styles.typeText}>Document Type : {name}</Text>
+        {!loadingFile && (
+  uploadedImageUrl ? (
+    <TouchableOpacity style={styles.deletebtn} onPress={handleDelete}>
+      <Text style={styles.buttonText}>Delete Uploaded Document</Text>
+    </TouchableOpacity>
+  ) : (
+    <TouchableOpacity style={styles.uploadBtn} onPress={selectDoc}>
+      <Text style={styles.buttonText}>Select & Upload Document</Text>
+    </TouchableOpacity>
+  )
+)}
+
+
+        {uploading && (
+          <ActivityIndicator
+            size="large"
+            color="#0000ff"
+            style={{ marginTop: 20 }}
+          />
+        )}
+
+        {uploadedImageUrl && (
+          <View style={{ marginTop: 20, alignItems: "center" }}>
+            {!isPdf ? (
+              <>
+                <Text style={{ fontSize: 14, marginBottom: 10 }}>
+                  Image Preview:
+                </Text>
+                <Image
+                  source={{ uri: uploadedImageUrl }}
+                  style={{ width: 300, height: 400 }}
+                  resizeMode="contain"
+                />
+              </>
+            ) : (
+              <>
+                <Text style={{ fontSize: 14, marginBottom: 10 }}>
+                  PDF Document Uploaded 📄
+                </Text>
+                <TouchableOpacity
+                  style={styles.viewPdfBtn}
+                  onPress={handleViewPdf}
+                >
+                  <Text style={styles.buttonText}>View PDF</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  outer :{
-    position: 'relative',
+  outer: {
+    position: "relative",
   },
   container: {
     paddingTop: 100,
     height: "104%",
-    width : "100%",
+    width: "100%",
     backgroundColor: "white",
-    display : 'flex',
+    display: "flex",
     alignItems: "center",
   },
-  backArrow :{
-    position: 'absolute',
-    top: 45,  
-    left: 5, 
-    zIndex: 100, 
-    padding: 19, 
-
+  backArrow: {
+    position: "absolute",
+    top: 45,
+    left: 5,
+    zIndex: 100,
+    padding: 19,
   },
   uploadText: {
     fontSize: 23,
@@ -228,38 +275,31 @@ const styles = StyleSheet.create({
   },
   typeText: {
     fontSize: 17,
-    fontWeight : 'bold'
-  },
-  btn: {
-    marginTop: 30,
-  },
-  selectbtn :{
-    padding : 30,
-    width : '80%',
-   
+    fontWeight: "bold",
   },
   uploadBtn: {
     backgroundColor: "#3629B7",
     padding: 13,
     borderRadius: 10,
     alignItems: "center",
-    margin : 17,
+    margin: 17,
   },
   deletebtn: {
     backgroundColor: "red",
     padding: 13,
     borderRadius: 10,
     alignItems: "center",
-    margin : 17,
+    margin: 17,
   },
-  imgSize: {
-    width: "100%",
-    height: "80%",
-    display : 'flex',
-    alignItems : 'center',
-    padding : 15,
-    marginTop: 4,
-    borderRadius: 10,
+  viewPdfBtn: {
+    backgroundColor: "#3629B7",
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 10,
   },
-  
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 });
