@@ -4,9 +4,8 @@ import {
   TouchableOpacity,
   View,
   Image,
-  SafeAreaView,
 } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { auth } from "../../config/FirebaseConfig";
 import { signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
@@ -18,11 +17,36 @@ import Feather from '@expo/vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateDoc, doc } from "firebase/firestore";
+import Entypo from '@expo/vector-icons/Entypo';
+import { Animated } from "react-native";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const profile = () => {
   const router = useRouter();
   const user = auth.currentUser;
   const [currUser, setCurrUser] = useState([])
+
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(250)).current;
+
+  const toggleSidebar = () => {
+    if (sidebarVisible) {
+      Animated.timing(slideAnim, {
+        toValue: 250,
+        duration: 300,
+        useNativeDriver: false,
+      }).start(() => setSidebarVisible(false));
+    } else {
+      setSidebarVisible(true);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
+  };
+
+
 
   const logout = () => {
     signOut(auth)
@@ -101,74 +125,98 @@ const profile = () => {
 
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View>
+    <View style={styles.container}>
+
+      <View style={styles.container1}>
         <Text style={styles.profileName}>PROFILE</Text>
-      </View>
-      <View style={styles.userInfoSection}>
-        <View>
-          <Image
-            source={
-              currUser?.profilePic
-                ? { uri: currUser.profilePic }
-                : require("../../assets/images/User.png")
-            }
-            style={styles.imgSize}
-          />
-        </View>
-        <TouchableOpacity style={styles.edit} onPress={pickAndUploadImage}><Feather name="edit-2" size={18} color="black" /></TouchableOpacity>
-        <View style={styles.userContent}>
-          <Text style={styles.title}>{currUser?.name}</Text>
-          <Text style={styles.caption}>{currUser?.username}</Text>
-        </View>
+        <TouchableOpacity style={styles.menu} onPress={toggleSidebar}>
+          <Entypo name="menu" size={30} color="white" />
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.textsBox}>
-        <View style={styles.info}>
-          <Text style={styles.text}>Username -: {currUser?.username}</Text>
-        </View>
-
-        <View style={styles.info}>
-          <Text style={styles.text}>Email -: {currUser?.email}</Text>
-        </View>
-
-        <View style={styles.info}>
-          <Text style={styles.text}>Contact No. -: {currUser?.number}</Text>
-        </View>
-      </View>
-
-      <View style={styles.menuWrapper}>
-        <TouchableOpacity onPress={() => { }}>
-          <View style={styles.menuItems}>
-            <Ionicons
-              name="information-circle-outline"
-              size={24}
-              color="black"
+      <View style={styles.container2}>
+        <View style={styles.userInfoSection}>
+          <View style={styles.img}>
+            <Image
+              source={
+                currUser?.profilePic
+                  ? { uri: currUser.profilePic }
+                  : require("../../assets/images/User.png")
+              }
+              style={styles.imgSize}
             />
-            <Text style={styles.menuText}>About</Text>
           </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => { }}>
-          <View style={styles.menuItems}>
-            <Ionicons name="help-circle-outline" size={24} color="black" />
-            <Text style={styles.menuText}>Help</Text>
+          <TouchableOpacity style={styles.edit} onPress={pickAndUploadImage}><Feather name="edit-2" size={18} color="black" /></TouchableOpacity>
+          <View style={styles.userContent}>
+            <Text style={styles.title}>{currUser?.name}</Text>
+            <Text style={styles.caption}>{currUser?.username}</Text>
           </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => { }}>
-          <View style={styles.menuItems}>
-            <Ionicons name="settings" size={25} color="black" />
-            <Text style={styles.menuText}>Setting</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity style={styles.logout} onPress={logout}>
-        <View style={styles.logoutSection}>
-          <Text style={styles.logoutTxt}>Logout</Text>
         </View>
-      </TouchableOpacity>
-    </SafeAreaView>
+
+        <View style={styles.textsBox}>
+          <View style={styles.info}>
+            <Text style={styles.text} numberOfLines={1} ellipsizeMode="tail">Username -: {currUser?.username}</Text>
+          </View>
+
+          <View style={styles.info}>
+            <Text style={styles.text} numberOfLines={1} ellipsizeMode="tail">Email -: {currUser?.email}</Text>
+          </View>
+
+          <View style={styles.info}>
+            <Text style={styles.text} numberOfLines={1} ellipsizeMode="tail">Contact No. -: {currUser?.number}</Text>
+          </View>
+        </View>
+
+      </View>
+
+      {sidebarVisible && (
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={toggleSidebar}
+        >
+          <Animated.View style={[styles.sidebar, { transform: [{ translateX: slideAnim }] }]}>
+            <View style={styles.sidebarText}>
+              <MaterialIcons name="cancel" size={34} color="black" />
+            </View>
+            <View style={styles.menuWrapper}>
+              <TouchableOpacity onPress={() => { }}>
+                <View style={styles.menuItems}>
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={24}
+                    color="black"
+                  />
+                  <Text style={styles.menuText}>About</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => { }}>
+                <View style={styles.menuItems}>
+                  <Ionicons name="help-circle-outline" size={24} color="black" />
+                  <Text style={styles.menuText}>Help</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => { }}>
+                <View style={styles.menuItems}>
+                  <Ionicons name="settings" size={25} color="black" />
+                  <Text style={styles.menuText}>Setting</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity onPress={logout}>
+              <View style={styles.logout}>
+                <Text style={styles.logoutTxt}>Logout</Text>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+
+
+      )}
+    </View>
   );
 };
 
@@ -176,21 +224,41 @@ export default profile;
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: 70,
+    backgroundColor: "#3629B7",
+  },
+  container1: {
+    height: "15%",
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+    paddingTop: 20,
+    gap: 120
+  },
+  container2: {
+    paddingTop: 30,
     backgroundColor: "#fff",
-    flex: 1,
+    height: "85%",
+    width: '100%',
+    backgroundColor: "white",
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
   },
   profileName: {
-    fontSize: 25,
-    padding: 5,
-    textAlign: "center",
+    fontSize: 30,
+    textAlign: "left",
     fontWeight: "bold",
+    color: 'white',
   },
   userInfoSection: {
     paddingHorizontal: 30,
     marginBottom: 25,
     display: "flex",
     flexDirection: "row",
+  },
+  img: {
+    width: '30%',
   },
   imgSize: {
     width: 100,
@@ -201,8 +269,8 @@ const styles = StyleSheet.create({
     display: "flex",
     justifyContent: "center",
     alignItems: "flex-start",
-    margin: 10,
-    width: "100%"
+    margin: 15,
+    width: "70%"
   },
   title: {
     fontSize: 24,
@@ -236,8 +304,7 @@ const styles = StyleSheet.create({
   menuItems: {
     flexDirection: "row",
     gap: 6,
-    paddingVertical: 15,
-    paddingHorizontal: 15,
+    marginVertical: 10,
   },
   menuText: {
     fontSize: 16,
@@ -252,7 +319,6 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   logoutSection: {
-    margin: 10,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -261,21 +327,15 @@ const styles = StyleSheet.create({
   logoutTxt: {
     color: 'white',
     fontSize: 15,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    textAlign: 'center'
   },
   logout: {
-    backgroundColor: "red",
-    width: 150,
-    height: 50,
-    padding: 10,
-    marginLeft: 30,
-    display: "flex",
-    justifyContent: "center",
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-    borderBottomRightRadius: 15,
-    borderBottomLeftRadius: 15,
-    alignItems: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    backgroundColor: 'red',
+    marginVertical: 10,
+    borderRadius: 15
   },
   info: {
     height: 60,
@@ -303,5 +363,33 @@ const styles = StyleSheet.create({
     marginTop: 70,
     borderWidth: 1,
     borderColor: '#c6d4f5'
-  }
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+    zIndex: 10,
+  },
+  sidebar: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    height: '100%',
+    width: 225,
+    backgroundColor: '#fff',
+    padding: 20,
+    zIndex: 11,
+  },
+  sidebarText: {
+    marginTop: 40,
+    display: 'flex',
+    alignItems: 'flex-end',
+    marginRight: 15,
+  },
+ 
+
 });
