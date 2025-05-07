@@ -1,10 +1,14 @@
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal, TextInput, Button ,ActivityIndicator, Alert, Vibration} from "react-native";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal, TextInput, Button, ActivityIndicator, Alert, Vibration } from "react-native";
 import React, { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from "expo-document-picker";
 import { Ionicons } from '@expo/vector-icons';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject, listAll, getMetadata } from "firebase/storage";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
+import { auth } from "../../config/FirebaseConfig";
+import { getFirestore, collection, query, where, getDocs, doc, setDoc } from "firebase/firestore";
+
 
 const OtherUpload = () => {
   const { name } = useLocalSearchParams();
@@ -14,34 +18,63 @@ const OtherUpload = () => {
   const [newFileName, setNewFileName] = useState("");
   const [docName, setDocName] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
+  const [loadingFile, setLoadingFile] = useState(false);
+  const [uploadedFileType, setUploadedFileType] = useState(null);
+
+
+
   const router = useRouter();
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchUploadedFile();
+    }, [])
+  );
 
-  const fetchDocuments = async () => {
+
+  const isPdf = uploadedImageUrl?.toLowerCase().includes(".pdf");
+
+  const fetchUploadedFile = async () => {
     try {
-      const storedDocs = await AsyncStorage.getItem(`uploadedDocuments_${name}`);
-      const parsedDocs = storedDocs ? JSON.parse(storedDocs) : [];
-      setDocuments(parsedDocs);
+      setLoadingFile(true);
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const storage = getStorage();
+      const userFolderRef = ref(storage, `documents/${user.email}/${docName}/`);
+      const result = await listAll(userFolderRef);
+
+      if (result.items.length > 0) {
+        const fileRef = result.items[0];
+        const url = await getDownloadURL(fileRef);
+        const metadata = await getMetadata(fileRef);
+        setUploadedImageUrl(url);
+        setUploadedFileType(metadata.contentType);
+      } else {
+        setUploadedImageUrl(null);
+        setUploadedFileType(null);
+      }
     } catch (error) {
-      console.log("Error loading documents:", error);
+      console.error("Error fetching uploaded file:", error);
+    } finally {
+      setLoadingFile(false);
     }
   };
 
   const uploadDocument = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: "*/*", 
+        type: "*/*",
       });
       if (!result.canceled) {
         const file = result.assets[0];
         setNewDocUri(file.uri);
         setNewFileName(file.name);
         setModalVisible(true);
-     }
-     
+        setUploadedFileType(file.mimeType);
+      }
+
     } catch (error) {
       console.log("Error picking document:", error);
     }
@@ -54,29 +87,50 @@ const OtherUpload = () => {
   };
 
   const saveDocument = async () => {
+    const user = auth.currentUser;
     if (docName.trim() === "") {
       alert("Please enter a document name!");
       return;
     }
-  
     try {
       setUploading(true);
       const storage = getStorage();
-      const firebaseFileName = `uploads/${Date.now()}_${newFileName}`;
+      const firebaseFileName = `documents/${user.email}/${docName}/${Date.now()}_${newFileName}`;
       const storageRef = ref(storage, firebaseFileName);
       const blob = await uriToBlob(newDocUri);
-  
+
       await uploadBytes(storageRef, blob);
       const downloadURL = await getDownloadURL(storageRef);
-  
-      const updatedDocs = [...documents, { 
-        name: docName, 
+
+      const firestore = getFirestore();
+      const userinfoRef = collection(firestore, "userinfo");
+
+      const q = query(userinfoRef, where("email", "==", user.email));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        const userDocRef = doc(firestore, "userinfo", userDoc.id);
+
+        await setDoc(userDocRef, {
+          uploadedDocuments: [...(userDoc.data().uploadedDocuments || []), {
+            name: docName,
+            path: downloadURL,
+            type: uploadedFileType,
+            uploadedAt: new Date().toISOString(),
+          }],
+        }, { merge: true });
+      } else {
+        console.error("User not found");
+      }
+
+      const updatedDocs = [...documents, {
+        name: docName,
         downloadUrl: downloadURL,
-        firebasePath: firebaseFileName ,
+        firebasePath: firebaseFileName,
       }];
       setDocuments(updatedDocs);
-      await AsyncStorage.setItem(`uploadedDocuments_${name}`, JSON.stringify(updatedDocs));
-  
+
       setDocName("");
       setNewDocUri("");
       setNewFileName("");
@@ -87,8 +141,11 @@ const OtherUpload = () => {
       setUploading(false);
     }
   };
-  
+
   const deleteDocument = async (index) => {
+
+    const user = auth.currentUser;
+
     Vibration.vibrate(50);
     Alert.alert(
       "Delete Document",
@@ -99,17 +156,34 @@ const OtherUpload = () => {
           text: "Delete", style: "destructive", onPress: async () => {
             try {
               const docToDelete = documents[index];
-  
+
               if (docToDelete.firebasePath) {
                 const storage = getStorage();
                 const fileRef = ref(storage, docToDelete.firebasePath);
                 await deleteObject(fileRef);
               }
-  
+
               const updatedDocs = documents.filter((_, i) => i !== index);
               setDocuments(updatedDocs);
-              await AsyncStorage.setItem(`uploadedDocuments_${name}`, JSON.stringify(updatedDocs));
-  
+
+              const firestore = getFirestore();
+              const userinfoRef = collection(firestore, "userinfo");
+              const q = query(userinfoRef, where("email", "==", user.email));
+              const querySnapshot = await getDocs(q);
+
+              if (!querySnapshot.empty) {
+                const userDoc = querySnapshot.docs[0];
+                const currentData = userDoc.data();
+                const updatedDocuments = (currentData.uploadedDocuments || []).filter(
+                  (doc) => doc.name !== documents[index].name
+                );
+
+                const userDocRef = doc(firestore, "userinfo", userDoc.id);
+                await setDoc(userDocRef, { uploadedDocuments: updatedDocuments }, { merge: true });
+
+                console.log("Firestore updated: Document reference removed.");
+              }
+
             } catch (error) {
               console.error("Error deleting document:", error);
             }
@@ -118,7 +192,7 @@ const OtherUpload = () => {
       ]
     );
   };
-  
+
 
   const renderItem = ({ item, index }) => (
     <View style={styles.docItem}>
@@ -136,21 +210,6 @@ const OtherUpload = () => {
       </TouchableOpacity>
     </View>
   );
-
-  //For deleting document on long press
-  // const renderItem = ({ item, index }) => (
-  //   <TouchableOpacity
-  //     style={styles.docItem}
-  //     onPress={() => router.push({
-  //       pathname: "/Pages/previewOther",
-  //       params: { uri: item.uri },
-  //     })}
-  //     onLongPress={() => deleteDocument(index)} 
-  //   >
-  //     <Text style={styles.docName}>{item.name}</Text>
-  //   </TouchableOpacity>
-  // );
-
 
   return (
     <View style={styles.container}>
@@ -230,10 +289,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   docContent: {
-  flexDirection: "row",
-  alignItems: "center",
-  justifyContent: "space-between", 
-},
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   docName: {
     fontSize: 18,
     color: "#333",
@@ -272,25 +331,25 @@ const styles = StyleSheet.create({
   },
 
   saveButton: {
-  backgroundColor: "#04AA6D",
-  paddingVertical: 10,
-  paddingHorizontal: 20,
-  borderRadius: 10,
-  marginHorizontal: 5,
-},
+    backgroundColor: "#04AA6D",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginHorizontal: 5,
+  },
 
-cancelButton: {
-  backgroundColor: "red",
-  paddingVertical: 10,
-  paddingHorizontal: 20,
-  borderRadius: 10,
-  marginHorizontal: 5,
-},
+  cancelButton: {
+    backgroundColor: "red",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginHorizontal: 5,
+  },
 
-buttonText: {
-  color: "white",
-  fontWeight: "bold",
-  fontSize: 16,
-},
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 
 });
