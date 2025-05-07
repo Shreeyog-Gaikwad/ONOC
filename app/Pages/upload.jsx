@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Button,
   Image,
   ActivityIndicator,
   TouchableOpacity,
@@ -26,6 +25,8 @@ import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
+import { getFirestore, collection, query, where, getDocs, doc, setDoc } from "firebase/firestore";
+
 
 
 export default function Upload() {
@@ -34,14 +35,14 @@ export default function Upload() {
   const [uploadedFileType, setUploadedFileType] = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
   const [loadingFile, setLoadingFile] = useState(true);
-  
+
 
   useFocusEffect(
     useCallback(() => {
       fetchUploadedFile();
     }, [])
   );
-  
+
 
   const isPdf = uploadedImageUrl?.toLowerCase().includes(".pdf");
 
@@ -52,7 +53,7 @@ export default function Upload() {
       if (!user) return;
 
       const storage = getStorage();
-      const userFolderRef = ref(storage, `uploads/${user.uid}/${name}/`);
+      const userFolderRef = ref(storage, `documents/${user.email}/${name}/`);
       const result = await listAll(userFolderRef);
 
       if (result.items.length > 0) {
@@ -89,23 +90,43 @@ export default function Upload() {
           onPress: async () => {
             const user = auth.currentUser;
             if (!user || !uploadedImageUrl) return;
-  
+
             try {
               setUploading(true);
               setUploadedImageUrl(null);
               setUploadedFileType(null);
-  
+
               const pathMatch = uploadedImageUrl.match(/\/o\/(.*?)\?/);
               const filePath = pathMatch
                 ? decodeURIComponent(pathMatch[1])
                 : null;
-  
+
               if (filePath) {
                 const storage = getStorage();
                 const fileRef = ref(storage, filePath);
                 await deleteObject(fileRef);
                 console.log("File deleted.");
               }
+
+              const firestore = getFirestore();
+              const userinfoRef = collection(firestore, "userinfo");
+              const q = query(userinfoRef, where("email", "==", user.email));
+              const querySnapshot = await getDocs(q);
+  
+              if (!querySnapshot.empty) {
+                const userDoc = querySnapshot.docs[0];
+                const currentData = userDoc.data();
+                const updatedDocuments = (currentData.uploadedDocuments || []).filter(
+                  (doc) => doc.name !== name
+                );
+  
+                const userDocRef = doc(firestore, "userinfo", userDoc.id);
+                await setDoc(userDocRef, { uploadedDocuments: updatedDocuments }, { merge: true });
+  
+                console.log("Firestore updated: Document reference removed.");
+              }
+
+              
             } catch (error) {
               console.error("Error deleting file:", error);
               await fetchUploadedFile();
@@ -118,7 +139,7 @@ export default function Upload() {
       { cancelable: true }
     );
   };
-  
+
 
   const handleViewPdf = async () => {
     if (uploadedImageUrl) {
@@ -132,43 +153,65 @@ export default function Upload() {
       console.log("No user logged in.");
       return;
     }
-  
+
     try {
       setUploading(true);
-  
+
       const result = await DocumentPicker.getDocumentAsync({
         type: ["image/*", "application/pdf"],
         copyToCacheDirectory: true,
         multiple: false,
       });
-  
+
       if (result.type === "cancel") {
         console.log("User cancelled document picker.");
         return;
       }
-  
+
       const fileUri = result.assets?.[0]?.uri;
       const fileMimeType = result.assets?.[0]?.mimeType;
       const fileName = result.assets?.[0]?.name;
-  
+
       if (!fileUri || !fileName) {
         console.log("Invalid file selected.");
         return;
       }
-  
+
       const tempUrl = fileUri;
       setUploadedImageUrl(tempUrl);
       setUploadedFileType(fileMimeType);
-  
+
       const storage = getStorage();
       const storageRef = ref(
         storage,
-        `uploads/${user.uid}/${name}/${Date.now()}_${fileName}`
+        `documents/${user.email}/${name}/${Date.now()}_${fileName}`
       );
       const blob = await uriToBlob(fileUri);
       await uploadBytes(storageRef, blob);
-  
       const downloadURL = await getDownloadURL(storageRef);
+
+      const firestore = getFirestore();
+      const userinfoRef = collection(firestore, "userinfo");
+
+      const q = query(userinfoRef, where("email", "==", user.email));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        const userDocRef = doc(firestore, "userinfo", userDoc.id);
+
+        await setDoc(userDocRef, {
+          uploadedDocuments: [...(userDoc.data().uploadedDocuments || []), {
+            name: name,
+            path: downloadURL,
+            type: fileMimeType,
+            uploadedAt: new Date().toISOString(),
+          }],
+        }, { merge: true });
+      } else {
+        console.error("User not found");
+      }
+
       setUploadedImageUrl(downloadURL);
       setUploadedFileType(fileMimeType);
     } catch (err) {
@@ -177,7 +220,7 @@ export default function Upload() {
       setUploading(false);
     }
   };
-  
+
 
   return (
     <View style={styles.outer}>
@@ -196,16 +239,16 @@ export default function Upload() {
         <Text style={styles.uploadText}>UPLOAD DOCUMENT PAGE</Text>
         <Text style={styles.typeText}>Document Type : {name}</Text>
         {!loadingFile && (
-  uploadedImageUrl ? (
-    <TouchableOpacity style={styles.deletebtn} onPress={handleDelete}>
-      <Text style={styles.buttonText}>Delete Uploaded Document</Text>
-    </TouchableOpacity>
-  ) : (
-    <TouchableOpacity style={styles.uploadBtn} onPress={selectDoc}>
-      <Text style={styles.buttonText}>Select & Upload Document</Text>
-    </TouchableOpacity>
-  )
-)}
+          uploadedImageUrl ? (
+            <TouchableOpacity style={styles.deletebtn} onPress={handleDelete}>
+              <Text style={styles.buttonText}>Delete Uploaded Document</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.uploadBtn} onPress={selectDoc}>
+              <Text style={styles.buttonText}>Select & Upload Document</Text>
+            </TouchableOpacity>
+          )
+        )}
 
 
         {uploading && (
