@@ -41,26 +41,32 @@ const OtherUpload = () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      const storage = getStorage();
-      const userFolderRef = ref(storage, `documents/${user.email}/${docName}/`);
-      const result = await listAll(userFolderRef);
+      const firestore = getFirestore();
+      const userinfoRef = collection(firestore, "userinfo");
+      const q = query(userinfoRef, where("email", "==", user.email));
+      const querySnapshot = await getDocs(q);
 
-      if (result.items.length > 0) {
-        const fileRef = result.items[0];
-        const url = await getDownloadURL(fileRef);
-        const metadata = await getMetadata(fileRef);
-        setUploadedImageUrl(url);
-        setUploadedFileType(metadata.contentType);
-      } else {
-        setUploadedImageUrl(null);
-        setUploadedFileType(null);
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        const uploadedDocs = userDoc.data().uploadedDocuments || [];
+
+        const filteredDocs = uploadedDocs
+          .filter(doc => doc.other === true)
+          .map(doc => ({
+            name: doc.name,
+            downloadUrl: doc.path,
+            firebasePath: doc.firebasePath || null,
+          }));
+
+        setDocuments(filteredDocs);
       }
     } catch (error) {
-      console.error("Error fetching uploaded file:", error);
+      console.error("Error fetching documents from Firestore:", error);
     } finally {
       setLoadingFile(false);
     }
   };
+
 
   const uploadDocument = async () => {
     try {
@@ -116,8 +122,10 @@ const OtherUpload = () => {
           uploadedDocuments: [...(userDoc.data().uploadedDocuments || []), {
             name: docName,
             path: downloadURL,
+            firebasePath: firebaseFileName, 
             type: uploadedFileType,
             uploadedAt: new Date().toISOString(),
+            other: true,
           }],
         }, { merge: true });
       } else {
