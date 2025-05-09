@@ -1,4 +1,11 @@
-import { StyleSheet, Text, TouchableOpacity, View, Image } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Image,
+  FlatList,
+} from "react-native";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -27,15 +34,16 @@ const history = () => {
           {" "}
           <FontAwesome5 name="history" size={30} color="black" /> History
         </Text>
-        <ScrollView contentContainerStyle={styles.noti}>
-          <HistoryBox />
-          <HistoryBox />
-          <HistoryBox />
-          <HistoryBox />
-          <HistoryBox />
-          <HistoryBox />
-          <HistoryBox />
-        </ScrollView>
+        <FlatList
+          data={[1]}
+          contentContainerStyle={styles.noti}
+          renderItem={() => (
+            <>
+              <HistoryBox />
+            </>
+          )}
+          keyExtractor={() => "wrapper"}
+        />
       </View>
     </GestureHandlerRootView>
   );
@@ -70,6 +78,7 @@ const styles = StyleSheet.create({
   },
   container2: {
     height: "85%",
+    width: '100%',
     backgroundColor: "white",
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
@@ -86,7 +95,6 @@ const styles = StyleSheet.create({
   noti: {
     display: "flex",
     flexDirection: "column",
-    alignItems: "center",
     justifyContent: "center",
   },
 });

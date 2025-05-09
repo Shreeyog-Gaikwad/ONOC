@@ -158,9 +158,7 @@ const send = () => {
             renderItem={({ item }) => (
               <TouchableOpacity onPress={() => router.push({
                 pathname: '/Pages/selectdoc', params: {
-                  name: item.name,
-                  number: item.phoneNumbers?.[0]?.number,
-                  image: item.image?.uri
+                  ...item
                 }
               })}>
                 <View style={styles.contactBox}>
