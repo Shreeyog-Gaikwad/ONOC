@@ -7,12 +7,14 @@ import { useEffect } from "react";
 import { auth, db } from "@/config/FirebaseConfig";
 import { getFirestore, collection, query, where, getDocs, doc, setDoc } from "firebase/firestore";
 import AntDesign from '@expo/vector-icons/AntDesign';
+import { Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import Entypo from '@expo/vector-icons/Entypo';
 import uuid from 'react-native-uuid';
 
 const selectdoc = () => {
   const item = useLocalSearchParams();
-
+  const router = useRouter();
   const [uploadedDocs, setUploadedDocs] = useState([]);
   const [selectedDocs, setSelectedDocs] = useState([]);
 
@@ -68,7 +70,18 @@ const selectdoc = () => {
         status: "pending",
         sendTime: new Date()
       });
-      console.log("Request created successfully with ID:", requestId);
+      console.log("Request created successfully");
+
+      Alert.alert(
+        "Documents Sent",
+        `Documents have been sent to ${item.name || 'user'} successfully.`,
+        [{ text: "OK" ,
+          onPress: () => router.back() 
+        }]
+        
+      );
+      setSelectedDocs([]);
+  
     } catch (err) {
       console.error("Error sending document request:", err);
     }
