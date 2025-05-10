@@ -15,6 +15,8 @@ import {
 import HistoryBox from "@/components/HistoryBox/HistoryBox";
 import { auth } from "@/config/FirebaseConfig";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import Feather from '@expo/vector-icons/Feather';
+
 
 const history = () => {
   const user = auth.currentUser;

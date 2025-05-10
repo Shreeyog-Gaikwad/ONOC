@@ -49,7 +49,7 @@ const HistoryBox = () => {
         <Text>Nothing to see here...</Text>
       ) : (
         <FlatList
-          data={confirmedDocs}
+        data={[...confirmedDocs].reverse()}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
         />
@@ -64,13 +64,8 @@ const styles = StyleSheet.create({
   container: {
     width: '90%',
     borderRadius: 20,
-    backgroundColor: '#c6d4f5',
-    marginBottom: 15,
     marginLeft: 20,
-    shadowColor: ' #000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 8,
+    
   },
   txt: {
     fontSize: 20,
@@ -79,10 +74,14 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    marginBottom: 10,
+    marginBottom: 25,
     backgroundColor: '#c6d4f5',
     padding: 10,
     borderRadius: 10,
+    shadowColor: ' #000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
   },
   senderText: {
     fontWeight: '600',

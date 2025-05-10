@@ -8,6 +8,7 @@ import { auth, db } from "@/config/FirebaseConfig";
 import { getFirestore, collection, query, where, getDocs, doc, setDoc } from "firebase/firestore";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Entypo from '@expo/vector-icons/Entypo';
+import uuid from 'react-native-uuid';
 
 const selectdoc = () => {
   const item = useLocalSearchParams();
@@ -55,19 +56,24 @@ const selectdoc = () => {
   };
 
   const send = async () => {
+    const shortId = uuid.v4().split('-')[0]; 
+    const requestId = `REQ_${shortId}`;
+
     try {
       await setDoc(doc(db, "sendRequests", `${item.email}_${Date.now()}`), {
+        requestId,
         from: auth.currentUser.displayName,
-        to: item.email,
+        to: item.name,
         documents: selectedDocs,
         status: "pending",
-        timestamp: new Date().toISOString()
+        sendTime: new Date()
       });
-      console.log("Request created successfully");
+      console.log("Request created successfully with ID:", requestId);
     } catch (err) {
       console.error("Error sending document request:", err);
     }
   };
+
 
 
   return (

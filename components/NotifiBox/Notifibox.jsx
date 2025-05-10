@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import { useEffect, useState } from "react";
 import { auth, db } from "@/config/FirebaseConfig";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, or } from "firebase/firestore";
 import React from 'react';
 import Feather from '@expo/vector-icons/Feather';
 import { doc, updateDoc } from "firebase/firestore";
@@ -9,12 +9,13 @@ import { TextInput } from 'react-native';
 
 const Notifibox = () => {
   const [requests, setRequests] = useState([]);
+  const [acceptedRequests, setAcceptedRequests] = useState([]);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
       query(
         collection(db, "sendRequests"),
-        where("to", "==", auth.currentUser?.email),
+        where("to", "==", auth.currentUser?.displayName),
       ),
       (snapshot) => {
         const requestsData = snapshot.docs.map(doc => ({
@@ -28,7 +29,6 @@ const Notifibox = () => {
     return () => unsubscribe();
   }, []);
 
-  const [acceptedRequests, setAcceptedRequests] = useState([]);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
@@ -50,7 +50,6 @@ const Notifibox = () => {
   }, []);
 
 
-
   const handleRequestAction = async (requestId, action) => {
     if (action === 'Accept') {
       const otp = Math.floor(1000 + Math.random() * 9000).toString();
@@ -60,7 +59,7 @@ const Notifibox = () => {
         await updateDoc(requestRef, {
           status: 'accepted',
           otp: otp,
-          respondedAt: new Date()
+          acceptTime: new Date()
         });
         console.log(`Accepted request. OTP: ${otp}`);
       } catch (error) {
@@ -72,7 +71,7 @@ const Notifibox = () => {
         const requestRef = doc(db, "sendRequests", requestId);
         await updateDoc(requestRef, {
           status: 'rejected',
-          respondedAt: new Date()
+          rejectTime: new Date()
         });
         console.log("Rejected request.");
       } catch (error) {
@@ -80,18 +79,6 @@ const Notifibox = () => {
       }
     }
   };
-
-
-
-  const renderAcceptedItem = ({ item }) => (
-    <View style={styles.Item}>
-      <Text style={styles.title}>Request Accepted by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text></Text>
-      <Text>Your OTP is: <Text style={{ fontWeight: 'bold' }}>{item.otp}</Text></Text>
-      <Text>Share this OTP manually with <Text style={{ fontWeight: 'bold' }}>{item.to}</Text> to continue.</Text>
-    </View>
-  );
-
-
 
   const [enteredOtp, setEnteredOtp] = useState({});
   const [verified, setVerified] = useState({});
@@ -114,13 +101,35 @@ const Notifibox = () => {
     }
   };
 
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '';
+    const date = timestamp.toDate();
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); 
+    const year = date.getFullYear();
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+    return `${day}/${month}/${year} ${time}`;
+  };
+
+   const renderAcceptedItem = ({ item }) => (
+    <View style={styles.Item}>
+      <Text style={styles.title}>Request Accepted by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text></Text>
+      <Text>Your OTP is: <Text style={{ fontWeight: 'bold' }}>{item.otp}</Text></Text>
+      <Text>Share this OTP manually with <Text style={{ fontWeight: 'bold' }}>{item.to}</Text> to continue.</Text>
+      <Text>Responded at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text></Text>
+    </View>
+  );
+  
+
   const renderRequestItem = ({ item }) => (
     <View style={styles.Item}>
-      <Text style={styles.requestText}>{item.from}</Text>
+      <Text style={styles.requestText}><Feather name="user" size={14} /> {item.from}</Text>
       {item.status === 'accepted' ? (
         item.sendConfirmed ? (
           <Text style={{ color: 'green' }}>
             ✅ OTP already verified. Documents are available in the History Tab.
+
           </Text>
         ) : (
           <>
@@ -154,10 +163,13 @@ const Notifibox = () => {
       ) : (
         <>
           <Text>Wants to send you documents.</Text>
+          <Text>Request ID : <Text style={styles.bold}>{item.requestId}</Text></Text>
+          <Text>Date-Time : <Text  style={styles.bold}>{formatTimestamp(item.sendTime)}</Text></Text>
           <View style={styles.docs}>
             {item.documents.map((doc, index) => (
               <Text key={doc.name + index} style={styles.doc}>
                 <Feather name="paperclip" size={13} color="black" /> {doc.name}
+                <Text>{doc.timestamp}</Text>
               </Text>
             ))}
           </View>
@@ -186,12 +198,12 @@ const Notifibox = () => {
     <View style={styles.container}>
       <FlatList
         nestedScrollEnabled={true}
-        data={requests}
+        data={[...requests].reverse()}
         renderItem={renderRequestItem}
         keyExtractor={(item) => item.id}
       />
       <FlatList
-        data={acceptedRequests}
+        data={[...acceptedRequests].reverse()}
         renderItem={renderAcceptedItem}
         keyExtractor={(item) => item.id}
       />
@@ -216,7 +228,7 @@ const styles = StyleSheet.create({
   Item: {
     backgroundColor: '#c6d4f5',
     padding: 15,
-    marginBottom: 10,
+    marginBottom: 15,
     borderRadius: 15,
     shadowColor: ' #000',
     shadowOpacity: 0.1,
@@ -292,6 +304,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 5,
     width: '50%',
+  },
+  bold : {
+    fontWeight: 'bold'
   }
 
 });
