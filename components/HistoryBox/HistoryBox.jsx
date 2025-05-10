@@ -11,7 +11,7 @@ const HistoryBox = () => {
     const unsubscribe = onSnapshot(
       query(
         collection(db, 'sendRequests'),
-        where('to', '==', auth.currentUser?.email),
+        where('to', '==', auth.currentUser?.displayName),
         where('sendConfirmed', '==', true)
       ),
       (snapshot) => {
@@ -22,22 +22,22 @@ const HistoryBox = () => {
         setConfirmedDocs(data);
       }
     );
-
     return () => unsubscribe();
   }, []);
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <Text style={styles.senderText}><Feather name="user" size={14} /> {item.from}</Text>
+      <Text>Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text></Text>
       <Text>Documents:</Text>
       {item.documents?.map((doc, index) => (
-        <View style={styles.docs}  key={index}>
-        <Text style={styles.docText}>
-          <Feather name="paperclip" size={13} /> {doc.name} 
-        </Text>
-        <TouchableOpacity style={styles.view}>
-          <Text style={styles.viewTxt}>View</Text>
-        </TouchableOpacity>
+        <View style={styles.docs} key={index}>
+          <Text style={styles.docText}>
+            <Feather name="paperclip" size={13} /> {doc.name}
+          </Text>
+          <TouchableOpacity style={styles.view}>
+            <Text style={styles.viewTxt}>View</Text>
+          </TouchableOpacity>
         </View>
       ))}
     </View>
@@ -49,7 +49,7 @@ const HistoryBox = () => {
         <Text>Nothing to see here...</Text>
       ) : (
         <FlatList
-        data={[...confirmedDocs].reverse()}
+          data={[...confirmedDocs].reverse()}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
         />
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     width: '90%',
     borderRadius: 20,
     marginLeft: 20,
-    
+
   },
   txt: {
     fontSize: 20,
@@ -90,14 +90,14 @@ const styles = StyleSheet.create({
   docText: {
     marginLeft: 10,
   },
-  docs : {
+  docs: {
     paddingRight: 10,
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 7
   },
-  view:{
+  view: {
     backgroundColor: '#007bff',
     padding: 3,
     paddingHorizontal: 10,

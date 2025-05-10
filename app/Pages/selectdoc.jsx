@@ -73,10 +73,10 @@ const selectdoc = () => {
       console.log("Request created successfully");
 
       Alert.alert(
-        "Documents Sent",
-        `Documents have been sent to ${item.name || 'user'} successfully.`,
+        "Documents Request Sent",
+        `Documents request have been sent to ${item.name || 'user'} successfully.`,
         [{ text: "OK" ,
-          onPress: () => router.back() 
+          onPress: () => router.replace('/(tabs)/notification') 
         }]
         
       );

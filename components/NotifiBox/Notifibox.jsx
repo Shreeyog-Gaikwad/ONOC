@@ -6,10 +6,13 @@ import React from 'react';
 import Feather from '@expo/vector-icons/Feather';
 import { doc, updateDoc } from "firebase/firestore";
 import { TextInput } from 'react-native';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import Entypo from '@expo/vector-icons/Entypo';
 
 const Notifibox = () => {
-  const [requests, setRequests] = useState([]);
-  const [acceptedRequests, setAcceptedRequests] = useState([]);
+  const [recever, setRecever] = useState([]);
+  const [sender, setSender] = useState([]);
+
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
@@ -18,34 +21,30 @@ const Notifibox = () => {
         where("to", "==", auth.currentUser?.displayName),
       ),
       (snapshot) => {
-        const requestsData = snapshot.docs.map(doc => ({
+        const receverData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setRequests(requestsData);
+        setRecever(receverData);
       }
     );
-
     return () => unsubscribe();
   }, []);
-
 
   useEffect(() => {
     const unsubscribe = onSnapshot(
       query(
         collection(db, "sendRequests"),
         where("from", "==", auth.currentUser?.displayName),
-        where("status", "==", "accepted")
       ),
       (snapshot) => {
-        const acceptedData = snapshot.docs.map(doc => ({
+        const senderData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setAcceptedRequests(acceptedData);
+        setSender(senderData);
       }
     );
-
     return () => unsubscribe();
   }, []);
 
@@ -90,6 +89,7 @@ const Notifibox = () => {
       try {
         const docRef = doc(db, "sendRequests", id);
         await updateDoc(docRef, {
+          docSendTime : new Date(),
           sendConfirmed: true
         });
         console.log("sendConfirmed set to true for request:", id);
@@ -105,32 +105,96 @@ const Notifibox = () => {
     if (!timestamp) return '';
     const date = timestamp.toDate();
     const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); 
+    const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  
+
     return `${day}/${month}/${year} ${time}`;
   };
 
-   const renderAcceptedItem = ({ item }) => (
-    <View style={styles.Item}>
-      <Text style={styles.title}>Request Accepted by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text></Text>
-      <Text>Your OTP is: <Text style={{ fontWeight: 'bold' }}>{item.otp}</Text></Text>
-      <Text>Share this OTP manually with <Text style={{ fontWeight: 'bold' }}>{item.to}</Text> to continue.</Text>
-      <Text>Responded at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text></Text>
-    </View>
-  );
-  
+  const senderSide = ({ item }) => {
+    return (
+      <View style={styles.Item}>
+        {item.status === 'pending' ? (
+          <>
+            <Text style={styles.title}>
+              Request successfully sent to <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+            </Text>
+            <Text>
+              Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+            </Text>
+            <Text>
+              Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.sendTime)}</Text>
+            </Text>
+          </>
+        ) : item.status === 'accepted' ? (
+          item.sendConfirmed ? (
+            <>
+              <Text>
+                Documents successfully delivered.
+              </Text>
+              <Text style={styles.title}>
+                <AntDesign name="checkcircle" size={13} color="green" /> OTP verified by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+              </Text>
+              <Text>
+                Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+              </Text>
+              <Text>
+                Delivered at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.docSendTime)}</Text>
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.title}>
+                Request Accepted by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+              </Text>
+              <Text>
+                Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+              </Text>
+              <Text>
+                Your OTP is: <Text style={{ fontWeight: 'bold' }}>{item.otp}</Text>
+              </Text>
+              <Text>
+                Share this OTP manually with <Text style={{ fontWeight: 'bold' }}>{item.to}</Text> to continue.
+              </Text>
+              <Text>
+                Accepted at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text>
+              </Text>
+            </>
+          )
+        ) : item.status === 'rejected' ? (
+          <>
+            <Text style={styles.title}>
+              Request Rejected by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+            </Text>
+            <Text>
+              Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+            </Text>
+            <Text>
+              Rejected at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.rejectTime)}</Text>
+            </Text>
+          </>
+        ) : null}
+      </View>
+    );
+  };
 
-  const renderRequestItem = ({ item }) => (
+
+  const receverSide = ({ item }) => (
     <View style={styles.Item}>
       <Text style={styles.requestText}><Feather name="user" size={14} /> {item.from}</Text>
+
       {item.status === 'accepted' ? (
         item.sendConfirmed ? (
-          <Text style={{ color: 'green' }}>
-            ✅ OTP already verified. Documents are available in the History Tab.
-
-          </Text>
+          <View>
+            <Text>Request ID : <Text style={styles.bold}>{item.requestId}</Text></Text>
+            <Text>
+              Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text>
+            </Text>
+            <Text style={{ color: 'green' }}>
+              <AntDesign name="checkcircle" size={13} color="green" /> OTP verified. You can see the Documents in History Tab.
+            </Text>
+          </View>
         ) : (
           <>
             <Text>Enter OTP shared by {item.from} to receive the documents :</Text>
@@ -150,21 +214,31 @@ const Notifibox = () => {
             </TouchableOpacity>
             {verified[item.id] === true && (
               <Text style={{ color: 'green' }}>
-                OTP verified ✅. You can see the documents in History Tab
+                OTP verified <AntDesign name="checkcircle" size={13} color="green" />. You can see the documents in History Tab
               </Text>
             )}
             {verified[item.id] === false && (
               <Text style={{ color: 'red' }}>
-                Incorrect OTP ❌
+                Incorrect OTP <Entypo name="circle-with-cross" size={15} color="red" />
               </Text>
             )}
           </>
         )
+      ) : item.status === 'rejected' ? (
+        <View>
+          <Text>Request ID : <Text style={styles.bold}>{item.requestId}</Text></Text>
+          <Text>
+            Rejected at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.rejectTime)}</Text>
+          </Text>
+          <Text style={{ color: 'red' }}>
+            <Entypo name="circle-with-cross" size={15} color="red" /> You rejected the request from <Text style={styles.bold}>{item.from}</Text>.
+          </Text>
+        </View>
       ) : (
         <>
           <Text>Wants to send you documents.</Text>
           <Text>Request ID : <Text style={styles.bold}>{item.requestId}</Text></Text>
-          <Text>Date-Time : <Text  style={styles.bold}>{formatTimestamp(item.sendTime)}</Text></Text>
+          <Text>Date-Time : <Text style={styles.bold}>{formatTimestamp(item.sendTime)}</Text></Text>
           <View style={styles.docs}>
             {item.documents.map((doc, index) => (
               <Text key={doc.name + index} style={styles.doc}>
@@ -189,22 +263,22 @@ const Notifibox = () => {
           </View>
         </>
       )}
-
     </View>
   );
+
 
 
   return (
     <View style={styles.container}>
       <FlatList
         nestedScrollEnabled={true}
-        data={[...requests].reverse()}
-        renderItem={renderRequestItem}
+        data={[...recever].reverse()}
+        renderItem={receverSide}
         keyExtractor={(item) => item.id}
       />
       <FlatList
-        data={[...acceptedRequests].reverse()}
-        renderItem={renderAcceptedItem}
+        data={[...sender].reverse()}
+        renderItem={senderSide}
         keyExtractor={(item) => item.id}
       />
     </View>
@@ -305,7 +379,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     width: '50%',
   },
-  bold : {
+  bold: {
     fontWeight: 'bold'
   }
 
