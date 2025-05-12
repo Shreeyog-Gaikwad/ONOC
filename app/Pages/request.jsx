@@ -16,8 +16,6 @@ const send = () => {
   const [userInContacts, setUserInContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredContacts, setFilteredContacts] = useState([]);
-  const [isContact, setIsContact] = useState(false);
-
 
   const getContacts = async () => {
     const { status } = await Contacts.requestPermissionsAsync();
@@ -88,7 +86,7 @@ const send = () => {
 
     setFilteredContacts([...formattedFirestoreUsers]);
   }, [searchTerm, contacts, users]);
-
+  
 
   return (
 
@@ -115,7 +113,7 @@ const send = () => {
             renderItem={({ item }) => (
               item.number == null ? null :
                 <TouchableOpacity onPress={() => router.push({
-                  pathname: '/Pages/selectdoc', params: {
+                  pathname: '/Pages/selectReqDoc', params: {
                     ...item
                   }
                 })}>
@@ -157,10 +155,8 @@ const send = () => {
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
               <TouchableOpacity onPress={() => router.push({
-                pathname: '/Pages/selectdoc', params: {
-                  name: item.name,
-                  number: item.phoneNumbers?.[0]?.number,
-                  image: item.image?.uri
+                pathname: '/Pages/selectReqDoc', params: {
+                  ...item
                 }
               })}>
                 <View style={styles.contactBox}>

@@ -16,8 +16,6 @@ const send = () => {
   const [userInContacts, setUserInContacts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredContacts, setFilteredContacts] = useState([]);
-  const [isContact, setIsContact] = useState(false);
-
 
   const getContacts = async () => {
     const { status } = await Contacts.requestPermissionsAsync();
