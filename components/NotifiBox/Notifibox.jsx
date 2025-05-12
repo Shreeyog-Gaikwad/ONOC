@@ -122,10 +122,18 @@ const Notifibox = () => {
       } else {
         return false;
       }
-    } 
+    }
   };
 
-
+  useEffect(() => {
+    const combined = [...recever, ...sender];
+    const sorted = combined.sort((a, b) => {
+      const timeA = a.sendTime?.toDate?.() || a.acceptTime?.toDate?.() || a.rejectTime?.toDate?.() || new Date(0);
+      const timeB = b.sendTime?.toDate?.() || b.acceptTime?.toDate?.() || b.rejectTime?.toDate?.() || new Date(0);
+      return timeB - timeA;
+    });
+    setAllRequests(sorted);
+  }, [recever, sender]);
 
   const senderSide = ({ item }) => {
     return (
@@ -340,16 +348,15 @@ const Notifibox = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        nestedScrollEnabled={true}
-        data={[...recever].reverse()}
-        renderItem={receverSide}
+        data={allRequests}
         keyExtractor={(item) => item.id}
+        renderItem={({ item }) =>
+          item.from === auth.currentUser?.displayName
+            ? senderSide({ item })
+            : receverSide({ item })
+        }
       />
-      <FlatList
-        data={[...sender].reverse()}
-        renderItem={senderSide}
-        keyExtractor={(item) => item.id}
-      />
+
     </View>
   );
 };
