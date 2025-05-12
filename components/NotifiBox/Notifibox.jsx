@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import { useEffect, useState } from "react";
 import { auth, db } from "@/config/FirebaseConfig";
-import { collection, query, where, onSnapshot, or } from "firebase/firestore";
+import { collection, query, where, onSnapshot, or, Timestamp } from "firebase/firestore";
 import React from 'react';
 import Feather from '@expo/vector-icons/Feather';
 import { doc, updateDoc } from "firebase/firestore";
@@ -12,6 +12,8 @@ import Entypo from '@expo/vector-icons/Entypo';
 const Notifibox = () => {
   const [recever, setRecever] = useState([]);
   const [sender, setSender] = useState([]);
+
+  const [allRequests, setAllRequests] = useState([...recever, ...sender]);
 
 
   useEffect(() => {
@@ -52,15 +54,14 @@ const Notifibox = () => {
   const handleRequestAction = async (requestId, action) => {
     if (action === 'Accept') {
       const otp = Math.floor(1000 + Math.random() * 9000).toString();
-
       try {
         const requestRef = doc(db, "sendRequests", requestId);
         await updateDoc(requestRef, {
           status: 'accepted',
+          acceptTime: new Date(),
           otp: otp,
-          acceptTime: new Date()
+          otpExpirationTime: new Date(Date.now() + 10 * 60 * 1000),
         });
-        console.log(`Accepted request. OTP: ${otp}`);
       } catch (error) {
         console.error("Error accepting request: ", error);
       }
@@ -89,7 +90,7 @@ const Notifibox = () => {
       try {
         const docRef = doc(db, "sendRequests", id);
         await updateDoc(docRef, {
-          docSendTime : new Date(),
+          docSendTime: new Date(),
           sendConfirmed: true
         });
         console.log("sendConfirmed set to true for request:", id);
@@ -112,11 +113,29 @@ const Notifibox = () => {
     return `${day}/${month}/${year} ${time}`;
   };
 
+  const checkOtpExpiration = (item) => {
+    if (item.otpExpirationTime) {
+      const currentTime = new Date();
+      const expirationTime = item.otpExpirationTime.toDate();
+      if (currentTime < expirationTime) {
+        return true;
+      } else {
+        return false;
+      }
+    } 
+  };
+
+
+
   const senderSide = ({ item }) => {
     return (
       <View style={styles.Item}>
+        <Text style={styles.requestText}><Feather name="user" size={14} /> {item.to}</Text>
         {item.status === 'pending' ? (
           <>
+            <Text>
+              You wanted to share some documents to {item.to}.
+            </Text>
             <Text style={styles.title}>
               Request successfully sent to <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
             </Text>
@@ -145,25 +164,43 @@ const Notifibox = () => {
             </>
           ) : (
             <>
-              <Text style={styles.title}>
-                Request Accepted by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
-              </Text>
-              <Text>
-                Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
-              </Text>
-              <Text>
-                Your OTP is: <Text style={{ fontWeight: 'bold' }}>{item.otp}</Text>
-              </Text>
-              <Text>
-                Share this OTP manually with <Text style={{ fontWeight: 'bold' }}>{item.to}</Text> to continue.
-              </Text>
-              <Text>
-                Accepted at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text>
-              </Text>
+              {checkOtpExpiration(item) ?
+                <>
+                  <Text style={styles.title}>
+                    Request Accepted by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+                  </Text>
+                  <Text>
+                    Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+                  </Text>
+                  <Text>
+                    Your OTP is: <Text style={{ fontWeight: 'bold' }}>{item.otp}</Text>
+                  </Text>
+                  <Text>
+                    Share this OTP manually with <Text style={{ fontWeight: 'bold' }}>{item.to}</Text> to continue.
+                  </Text>
+                  <Text>
+                    Accepted at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text>
+                  </Text>
+                </>
+                :
+                <>
+                  <Text>You wanted to share documents to {item.to}</Text>
+                  <Text>
+                    Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+                  </Text>
+                  <Text>OTP not entered by {item.to} before the expiration time</Text>
+                  <Text style={{ color: 'red' }}>
+                    Documents not send <Entypo name="circle-with-cross" size={15} color="red" />
+                  </Text>
+                </>
+              }
             </>
           )
         ) : item.status === 'rejected' ? (
           <>
+            <Text>
+              You wanted to share some documents to {item.to}
+            </Text>
             <Text style={styles.title}>
               Request Rejected by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
             </Text>
@@ -173,9 +210,12 @@ const Notifibox = () => {
             <Text>
               Rejected at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.rejectTime)}</Text>
             </Text>
+            <Text style={{ color: 'red' }}>
+              Documents not send <Entypo name="circle-with-cross" size={15} color="red" />
+            </Text>
           </>
         ) : null}
-      </View>
+      </View >
     );
   };
 
@@ -187,6 +227,9 @@ const Notifibox = () => {
       {item.status === 'accepted' ? (
         item.sendConfirmed ? (
           <View>
+            <Text>
+              {item.from} shared some documents.
+            </Text>
             <Text>Request ID : <Text style={styles.bold}>{item.requestId}</Text></Text>
             <Text>
               Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text>
@@ -197,31 +240,57 @@ const Notifibox = () => {
           </View>
         ) : (
           <>
-            <Text>Enter OTP shared by {item.from} to receive the documents :</Text>
-            <TextInput
-              style={styles.input}
-              keyboardType="numeric"
-              maxLength={4}
-              placeholder="Enter OTP"
-              value={enteredOtp[item.id] || ''}
-              onChangeText={(text) => setEnteredOtp(prev => ({ ...prev, [item.id]: text }))}
-            />
-            <TouchableOpacity
-              style={styles.verifyButton}
-              onPress={() => handleOtpVerify(item.id, item.otp)}
-            >
-              <Text style={styles.buttonText}>Verify OTP</Text>
-            </TouchableOpacity>
-            {verified[item.id] === true && (
-              <Text style={{ color: 'green' }}>
-                OTP verified <AntDesign name="checkcircle" size={13} color="green" />. You can see the documents in History Tab
-              </Text>
+            {checkOtpExpiration(item) ? (
+              <>
+                <Text>Enter OTP shared by {item.from} to receive the documents :</Text>
+                <TextInput
+                  style={styles.input}
+                  keyboardType="numeric"
+                  maxLength={4}
+                  placeholder="Enter OTP"
+                  value={enteredOtp[item.id] || ''}
+                  onChangeText={(text) =>
+                    setEnteredOtp((prev) => ({ ...prev, [item.id]: text }))
+                  }
+                />
+                <Text>
+                  OTP should be entered before <Text style={styles.bold}>{formatTimestamp(item.otpExpirationTime)}</Text> after that OTP will be expired
+                </Text>
+                <TouchableOpacity
+                  style={styles.verifyButton}
+                  onPress={() => handleOtpVerify(item.id, item.otp)}
+                >
+                  <Text style={styles.buttonText}>Verify OTP</Text>
+                </TouchableOpacity>
+
+                {verified[item.id] === true && (
+                  <Text style={{ color: 'green' }}>
+                    OTP verified <AntDesign name="checkcircle" size={13} color="green" />.
+                    You can see the documents in History Tab
+                  </Text>
+                )}
+
+                {verified[item.id] === false && (
+                  <Text style={{ color: 'red' }}>
+                    Incorrect OTP <Entypo name="circle-with-cross" size={15} color="red" />
+                  </Text>
+                )}
+              </>
+            ) : (
+              <>
+                <Text>{item.from} wanted to share documents.</Text>
+                <Text>
+                  Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+                </Text>
+                <Text>
+                  Date-Time : <Text style={styles.bold}>{formatTimestamp(item.otpExpirationTime)}</Text>
+                </Text>
+                <Text style={{ color: 'red' }}>
+                  Time expired to enter the OTP <Entypo name="circle-with-cross" size={15} color="red" />
+                </Text>
+              </>
             )}
-            {verified[item.id] === false && (
-              <Text style={{ color: 'red' }}>
-                Incorrect OTP <Entypo name="circle-with-cross" size={15} color="red" />
-              </Text>
-            )}
+
           </>
         )
       ) : item.status === 'rejected' ? (
@@ -236,7 +305,7 @@ const Notifibox = () => {
         </View>
       ) : (
         <>
-          <Text>Wants to send you documents.</Text>
+          <Text>{item.from} Wants to send you documents.</Text>
           <Text>Request ID : <Text style={styles.bold}>{item.requestId}</Text></Text>
           <Text>Date-Time : <Text style={styles.bold}>{formatTimestamp(item.sendTime)}</Text></Text>
           <View style={styles.docs}>
@@ -378,6 +447,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 5,
     width: '50%',
+    marginTop: 5,
   },
   bold: {
     fontWeight: 'bold'

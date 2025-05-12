@@ -58,7 +58,7 @@ const selectdoc = () => {
   };
 
   const send = async () => {
-    const shortId = uuid.v4().split('-')[0]; 
+    const shortId = uuid.v4().split('-')[0];
     const requestId = `REQ_${shortId}`;
 
     try {
@@ -68,20 +68,21 @@ const selectdoc = () => {
         to: item.name,
         documents: selectedDocs,
         status: "pending",
-        sendTime: new Date()
+        sendTime: new Date(),
       });
       console.log("Request created successfully");
 
       Alert.alert(
         "Documents Request Sent",
         `Documents request have been sent to ${item.name || 'user'} successfully.`,
-        [{ text: "OK" ,
-          onPress: () => router.replace('/(tabs)/notification') 
+        [{
+          text: "OK",
+          onPress: () => router.replace('/(tabs)/notification')
         }]
-        
+
       );
       setSelectedDocs([]);
-  
+
     } catch (err) {
       console.error("Error sending document request:", err);
     }
