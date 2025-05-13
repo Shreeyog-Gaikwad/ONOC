@@ -6,6 +6,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useRouter } from 'expo-router';
 import Entypo from '@expo/vector-icons/Entypo';
+import uuid from 'react-native-uuid';
+import { getFirestore, collection, query, where, getDocs, doc, setDoc } from "firebase/firestore";
+import { auth, db } from "@/config/FirebaseConfig";
+import { Alert } from 'react-native';
+
+
 
 const selectdoc = () => {
     const item = useLocalSearchParams();
@@ -34,13 +40,44 @@ const selectdoc = () => {
         { name: "Caste Certificate" },
     ];
 
+    const send = async () => {
+        const shortId = uuid.v4().split('-')[0];
+        const requestId = `REQ_${shortId}`;
+
+        try {
+            await setDoc(doc(db, "sendDocRequests", `${item.email}_${Date.now()}`), {
+                requestId,
+                from: auth.currentUser.displayName,
+                to: item.name,
+                documents: selectedDocs,
+                status: "pending",
+                sendTime: new Date(),
+            });
+            console.log("Request created successfully");
+
+            Alert.alert(
+                "Documents Request Sent",
+                `Documents request have been sent to ${item.name || 'user'} successfully.`,
+                [{
+                    text: "OK",
+                    onPress: () => router.replace('/(tabs)/notification')
+                }]
+
+            );
+            setSelectedDocs([]);
+
+        } catch (err) {
+            console.error("Error sending document request:", err);
+        }
+    };
+
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
             <View style={styles.container}>
                 <View>
                     <Text style={styles.head1}>Select Documents</Text>
                     <Text style={styles.head2}>
-                        to send <Text style={styles.name}>{item.name} !</Text>
+                        to request <Text style={styles.name}>{item.name} !</Text>
                     </Text>
                 </View>
 
@@ -65,7 +102,7 @@ const selectdoc = () => {
 
                 </ScrollView>
 
-                <TouchableOpacity style={styles.btn}>
+                <TouchableOpacity style={styles.btn} onPress={send}>
                     <Text style={styles.btntxt}>Request Documents</Text>
                 </TouchableOpacity>
             </View>
@@ -94,7 +131,7 @@ const styles = StyleSheet.create({
         color: "green",
     },
     boxContainer: {
-        paddingBottom: 30, 
+        paddingBottom: 30,
         width: '95%'
     },
     box: {

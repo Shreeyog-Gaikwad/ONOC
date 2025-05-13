@@ -10,7 +10,6 @@ import React from "react";
 import { StatusBar } from "expo-status-bar";
 import {
   GestureHandlerRootView,
-  ScrollView,
 } from "react-native-gesture-handler";
 import HistoryBox from "@/components/HistoryBox/HistoryBox";
 import { auth } from "@/config/FirebaseConfig";

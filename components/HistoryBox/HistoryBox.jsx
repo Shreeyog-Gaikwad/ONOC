@@ -6,9 +6,11 @@ import Feather from '@expo/vector-icons/Feather';
 
 const HistoryBox = () => {
   const [confirmedDocs, setConfirmedDocs] = useState([]);
+  const [receivedDocs, setReceivedDocs] = useState([]);
+  const [allDocs, setAllDocs] = useState([]);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(
+    const unsubscribe1 = onSnapshot(
       query(
         collection(db, 'sendRequests'),
         where('to', '==', auth.currentUser?.displayName),
@@ -17,23 +19,67 @@ const HistoryBox = () => {
       (snapshot) => {
         const data = snapshot.docs.map(doc => ({
           id: doc.id,
+          type: 'sent',
           ...doc.data(),
         }));
         setConfirmedDocs(data);
       }
     );
-    return () => unsubscribe();
+
+    const unsubscribe2 = onSnapshot(
+      query(
+        collection(db, 'sendDocRequests'),
+        where('from', '==', auth.currentUser?.displayName),
+        where('sendConfirmed', '==', true)
+      ),
+      (snapshot) => {
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          type: 'received',
+          ...doc.data(),
+        }));
+        setReceivedDocs(data);
+      }
+    );
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
   }, []);
+
+  useEffect(() => {
+    const merged = [...confirmedDocs, ...receivedDocs];
+    merged.sort((a, b) => {
+      const timeA = a.docSendTime?.toDate?.() || new Date(0);
+      const timeB = b.docSendTime?.toDate?.() || new Date(0);
+      return timeB - timeA; 
+    });
+    setAllDocs(merged);
+  }, [confirmedDocs, receivedDocs]);
+
+  useEffect(() => {
+    const merged = [...confirmedDocs, ...receivedDocs];
+    merged.sort((a, b) => {
+      const timeA = a.docSendTime?.toDate?.() || new Date(0);
+      const timeB = b.docSendTime?.toDate?.() || new Date(0);
+      return timeB - timeA;
+    });
+    setAllDocs(merged);
+  }, [confirmedDocs, receivedDocs]);
 
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      <Text style={styles.senderText}><Feather name="user" size={14} /> {item.from}</Text>
+      <Text style={styles.senderText}>
+        <Feather name="user" size={14} /> {item.type === 'sent' ? item.from : item.to}
+      </Text>
+      <Text>You received documents from {item.type === 'sent' ? item.from : item.to}</Text>
       <Text>Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text></Text>
       <Text>Documents:</Text>
       {item.documents?.map((doc, index) => (
         <View style={styles.docs} key={index}>
           <Text style={styles.docText}>
-            <Feather name="paperclip" size={13} /> {doc.name}
+            <Feather name="paperclip" size={13} /> {typeof doc === 'string' ? doc : doc.name}
           </Text>
           <TouchableOpacity style={styles.view}>
             <Text style={styles.viewTxt}>View</Text>
@@ -43,17 +89,15 @@ const HistoryBox = () => {
     </View>
   );
 
+
   return (
     <View style={styles.container}>
-      {confirmedDocs.length === 0 ? (
-        <Text>Nothing to see here...</Text>
-      ) : (
-        <FlatList
-          data={[...confirmedDocs].reverse()}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-        />
-      )}
+      <FlatList
+        data={allDocs}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+      />
+
     </View>
   );
 };
