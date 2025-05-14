@@ -1,31 +1,52 @@
 import {
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   Image,
   FlatList,
 } from "react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
-import {
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import HistoryBox from "@/components/HistoryBox/HistoryBox";
-import { auth } from "@/config/FirebaseConfig";
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
-import Feather from '@expo/vector-icons/Feather';
-
+import { auth, db } from "@/config/FirebaseConfig";
+import { query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 const history = () => {
   const user = auth.currentUser;
-  console.log(user);
+
+  const [profilePic, setProfilePic] = useState(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user) {
+        const q = query(
+          collection(db, "userinfo"),
+          where("id", "==", user.uid)
+        );
+        const querySnapshot = await getDocs(q);
+
+        const userInfo = querySnapshot.docs[0].data();
+        if (userInfo) {
+          setProfilePic(userInfo.profilePic);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
   return (
     <GestureHandlerRootView style={styles.container}>
       <StatusBar backgroundColor="#3629B7" />
       <View style={styles.container1}>
         <Image
-          source={require("../../assets/images/User.png")}
+          source={
+            profilePic
+              ? { uri: profilePic }
+              : require("../../assets/images/User.png")
+          }
           style={styles.img}
         />
         <Text style={styles.user}>Hii, {user?.displayName}</Text>
@@ -70,6 +91,7 @@ const styles = StyleSheet.create({
     marginTop: 45,
     height: 50,
     width: 50,
+    borderRadius: 50
   },
   user: {
     marginLeft: 15,
@@ -79,7 +101,7 @@ const styles = StyleSheet.create({
   },
   container2: {
     height: "85%",
-    width: '100%',
+    width: "100%",
     backgroundColor: "white",
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,

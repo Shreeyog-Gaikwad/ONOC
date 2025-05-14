@@ -6,18 +6,47 @@ import {
     Image,
     ScrollView
 } from "react-native";
-import React from 'react'
-import { auth } from "@/config/FirebaseConfig";
+import React, { useEffect, useState } from "react";
 import AntDesign from '@expo/vector-icons/AntDesign';
+import { auth, db } from "@/config/FirebaseConfig";
+import { query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 const about = () => {
     const user = auth.currentUser;
+    const [profilePic, setProfilePic] = useState(null);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (user) {
+                const q = query(
+                    collection(db, "userinfo"),
+                    where("id", "==", user.uid)
+                );
+                const querySnapshot = await getDocs(q);
+
+                const userInfo = querySnapshot.docs[0].data();
+                if (userInfo) {
+                    setProfilePic(userInfo.profilePic);
+                }
+            }
+        };
+
+        fetchUserData();
+    }, [user]);
 
     return (
         <View style={styles.container}>
 
             <View style={styles.container1}>
-                <Image source={require("../../assets/images/User.png")} style={styles.img} />
+                <Image
+                    source={
+                        profilePic
+                            ? { uri: profilePic }
+                            : require("../../assets/images/User.png")
+                    }
+                    style={styles.img}
+                />
                 <Text style={styles.user}>Hii, {user?.displayName}</Text>
             </View>
 
@@ -64,6 +93,7 @@ const styles = StyleSheet.create({
         marginTop: 45,
         height: 50,
         width: 50,
+        borderRadius: 50
     },
     user: {
         marginLeft: 15,

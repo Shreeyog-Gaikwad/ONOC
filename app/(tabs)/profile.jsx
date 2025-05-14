@@ -191,7 +191,7 @@ const profile = () => {
                 </View>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => { }}>
+              <TouchableOpacity onPress={() => { router.push('/Pages/help') }}>
                 <View style={styles.menuItems}>
                   <Ionicons name="help-circle-outline" size={24} color="black" />
                   <Text style={styles.menuText}>Help</Text>

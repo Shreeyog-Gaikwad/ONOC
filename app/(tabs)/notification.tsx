@@ -1,5 +1,12 @@
-import { StyleSheet, Text, TouchableOpacity, View, Image, FlatList } from "react-native";
-import React from "react";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Image,
+  FlatList,
+} from "react-native";
+import React, { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
@@ -7,17 +14,43 @@ import {
   ScrollView,
 } from "react-native-gesture-handler";
 import Notifibox from "@/components/NotifiBox/Notifibox";
-import { auth } from "@/config/FirebaseConfig";
+import { auth, db } from "@/config/FirebaseConfig";
+import { query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 const notification = () => {
   const user = auth.currentUser;
-  console.log(user);
+  const [profilePic, setProfilePic] = useState(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user) {
+        const q = query(
+          collection(db, "userinfo"),
+          where("id", "==", user.uid)
+        );
+        const querySnapshot = await getDocs(q);
+
+        const userInfo = querySnapshot.docs[0].data();
+        if (userInfo) {
+          setProfilePic(userInfo.profilePic);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
+
   return (
     <GestureHandlerRootView style={styles.container}>
       <StatusBar backgroundColor="#3629B7" />
       <View style={styles.container1}>
         <Image
-          source={require("../../assets/images/User.png")}
+          source={
+            profilePic
+              ? { uri: profilePic }
+              : require("../../assets/images/User.png")
+          }
           style={styles.img}
         />
         <Text style={styles.user}>Hii, {user?.displayName}</Text>
@@ -62,6 +95,7 @@ const styles = StyleSheet.create({
     marginTop: 45,
     height: 50,
     width: 50,
+    borderRadius: 50
   },
   user: {
     marginLeft: 15,
