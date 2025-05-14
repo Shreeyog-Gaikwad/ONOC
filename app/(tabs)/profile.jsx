@@ -180,7 +180,7 @@ const profile = () => {
               <MaterialIcons name="cancel" size={34} color="black" />
             </View>
             <View style={styles.menuWrapper}>
-              <TouchableOpacity onPress={() => { }}>
+              <TouchableOpacity onPress={() => {router.push('/Pages/about') }}>
                 <View style={styles.menuItems}>
                   <Ionicons
                     name="information-circle-outline"
