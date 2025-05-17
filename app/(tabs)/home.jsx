@@ -141,7 +141,7 @@ const Home = () => {
         <View style={styles.btn}>
           <TouchableOpacity
             style={styles.send}
-            onPress={() => router.push("/Pages/send")}
+            onPress={() => router.push("/Pages/selectMethod")}
           >
             <Text>Send Documents</Text>
           </TouchableOpacity>
