@@ -21,6 +21,29 @@ const Notifibox = () => {
   const [allReqRequests, setAllReqRequests] = useState([...receverReq, ...senderReq]);
 
   const [sortedRequests, setSortedRequests] = useState([...allRequests, ...allReqRequests]);
+  const [rfid, setRfid] = useState([]);
+
+  const [allLogs, setAllLogs] = useState([...sortedRequests, ...rfid]);
+
+  //RFID Documents
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      query(
+        collection(db, "rfidDocs"),
+        where("email", "==", auth.currentUser?.email),
+      ),
+      (snapshot) => {
+        const userData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          fromRfid: true,
+          ...doc.data(),
+        }));
+        setRfid(userData);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
 
   // For Send Documents Recever
@@ -288,6 +311,18 @@ const Notifibox = () => {
     setSortedRequests(sorted);
   }, [allRequests, allReqRequests]);
 
+  //Merging RFID logs and Other All Logs
+  useEffect(() => {
+    const combined = [...sortedRequests, ...rfid];
+    const sorted = combined.sort((a, b) => {
+      const timeA = a.sendTime?.toDate?.() || a.acceptTime?.toDate?.() || a.rejectTime?.toDate?.() || new Date(0);
+      const timeB = b.sendTime?.toDate?.() || b.acceptTime?.toDate?.() || b.rejectTime?.toDate?.() || new Date(0);
+      return timeB - timeA;
+    });
+    setAllLogs(sorted);
+  }, [sortedRequests, rfid]);
+
+
   // For Send Documents Recever
   const receverSide = ({ item }) => (
     <View style={styles.Item}>
@@ -407,93 +442,112 @@ const Notifibox = () => {
   // For Send Documents Sender
   const senderSide = ({ item }) => {
     return (
-      <View style={styles.Item}>
-        <Text style={styles.requestText}><Feather name="user" size={14} /> {item.to}</Text>
-        {item.status === 'pending' ? (
-          <>
-            <Text>
-              You wanted to share some documents to {item.to}.
-            </Text>
-            <Text style={styles.title}>
-              Request successfully sent to <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
-            </Text>
-            <Text>
-              Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
-            </Text>
-            <Text>
-              Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.sendTime)}</Text>
-            </Text>
-          </>
-        ) : item.status === 'accepted' ? (
-          item.sendConfirmed ? (
+      item.fromRfid ?
+        <View>
+          <Text>
+            You shared some documents by RFID Card.
+          </Text>
+          <Text style={styles.docs}>
+            {item.documents.map((doc, index) => (
+              <View style={styles.doc} key={index}>
+                <Feather name="paperclip" size={13} color="black" /> {doc.name}
+              </View>
+            ))}
+          </Text>
+          <Text>
+            Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+          </Text>
+          <Text>
+            Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.sendTime)}</Text>
+          </Text>
+        </View> :
+        <View style={styles.Item}>
+          <Text style={styles.requestText}><Feather name="user" size={14} /> {item.to}</Text>
+          {item.status === 'pending' ? (
             <>
               <Text>
-                Documents successfully delivered.
+                You wanted to share some documents to {item.to}.
               </Text>
               <Text style={styles.title}>
-                <AntDesign name="checkcircle" size={13} color="green" /> OTP verified by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+                Request successfully sent to <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
               </Text>
               <Text>
                 Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
               </Text>
               <Text>
-                Delivered at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.docSendTime)}</Text>
+                Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.sendTime)}</Text>
               </Text>
             </>
-          ) : (
+          ) : item.status === 'accepted' ? (
+            item.sendConfirmed ? (
+              <>
+                <Text>
+                  Documents successfully delivered.
+                </Text>
+                <Text style={styles.title}>
+                  <AntDesign name="checkcircle" size={13} color="green" /> OTP verified by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+                </Text>
+                <Text>
+                  Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+                </Text>
+                <Text>
+                  Delivered at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.docSendTime)}</Text>
+                </Text>
+              </>
+            ) : (
+              <>
+                {checkOtpExpiration(item) ?
+                  <>
+                    <Text style={styles.title}>
+                      Request Accepted by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+                    </Text>
+                    <Text>
+                      Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+                    </Text>
+                    <Text>
+                      Your OTP is: <Text style={{ fontWeight: 'bold' }}>{item.otp}</Text>
+                    </Text>
+                    <Text>
+                      Share this OTP manually with <Text style={{ fontWeight: 'bold' }}>{item.to}</Text> to continue.
+                    </Text>
+                    <Text>
+                      Accepted at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text>
+                    </Text>
+                  </>
+                  :
+                  <>
+                    <Text>You wanted to share documents to {item.to}</Text>
+                    <Text>
+                      Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+                    </Text>
+                    <Text>OTP not entered by {item.to} before the expiration time</Text>
+                    <Text style={{ color: 'red' }}>
+                      Documents not send <Entypo name="circle-with-cross" size={15} color="red" />
+                    </Text>
+                  </>
+                }
+              </>
+            )
+          ) : item.status === 'rejected' ? (
             <>
-              {checkOtpExpiration(item) ?
-                <>
-                  <Text style={styles.title}>
-                    Request Accepted by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
-                  </Text>
-                  <Text>
-                    Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
-                  </Text>
-                  <Text>
-                    Your OTP is: <Text style={{ fontWeight: 'bold' }}>{item.otp}</Text>
-                  </Text>
-                  <Text>
-                    Share this OTP manually with <Text style={{ fontWeight: 'bold' }}>{item.to}</Text> to continue.
-                  </Text>
-                  <Text>
-                    Accepted at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text>
-                  </Text>
-                </>
-                :
-                <>
-                  <Text>You wanted to share documents to {item.to}</Text>
-                  <Text>
-                    Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
-                  </Text>
-                  <Text>OTP not entered by {item.to} before the expiration time</Text>
-                  <Text style={{ color: 'red' }}>
-                    Documents not send <Entypo name="circle-with-cross" size={15} color="red" />
-                  </Text>
-                </>
-              }
+              <Text>
+                You wanted to share some documents to {item.to}
+              </Text>
+              <Text style={styles.title}>
+                Request Rejected by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+              </Text>
+              <Text>
+                Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+              </Text>
+              <Text>
+                Rejected at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.rejectTime)}</Text>
+              </Text>
+              <Text style={{ color: 'red' }}>
+                Documents not send <Entypo name="circle-with-cross" size={15} color="red" />
+              </Text>
             </>
-          )
-        ) : item.status === 'rejected' ? (
-          <>
-            <Text>
-              You wanted to share some documents to {item.to}
-            </Text>
-            <Text style={styles.title}>
-              Request Rejected by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
-            </Text>
-            <Text>
-              Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
-            </Text>
-            <Text>
-              Rejected at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.rejectTime)}</Text>
-            </Text>
-            <Text style={{ color: 'red' }}>
-              Documents not send <Entypo name="circle-with-cross" size={15} color="red" />
-            </Text>
-          </>
-        ) : null}
-      </View >
+          ) : null}
+        </View >
     );
   };
 

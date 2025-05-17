@@ -16,7 +16,7 @@ const selectMethod = () => {
                     <Entypo name="mobile" size={55} color="black" />
                     <Text style={styles.txt}>Send Documents by ONOC App</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.btn}>
+                <TouchableOpacity style={styles.btn} onPress={() => router.push("/Pages/selectRfidDocs")}>
                     <Image source={require('../../assets/images/ONOC.png')} style={styles.image} />
                     <Text  style={styles.txt}>Send Documents by ONOC Card</Text>
                 </TouchableOpacity>
