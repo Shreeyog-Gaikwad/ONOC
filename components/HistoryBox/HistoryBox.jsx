@@ -3,15 +3,18 @@ import React, { useEffect, useState } from 'react';
 import { db, auth } from '@/config/FirebaseConfig';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import Feather from '@expo/vector-icons/Feather';
+import { useRouter } from 'expo-router';
+
 
 const HistoryBox = () => {
   const [confirmedDocs, setConfirmedDocs] = useState([]);
   const [receivedDocs, setReceivedDocs] = useState([]);
   const [allDocs, setAllDocs] = useState([]);
+  const router = useRouter(); 
 
   useEffect(() => {
     const unsubscribe1 = onSnapshot(
-      query(
+      query( 
         collection(db, 'sendRequests'),
         where('to', '==', auth.currentUser?.displayName),
         where('sendConfirmed', '==', true)
@@ -81,9 +84,22 @@ const HistoryBox = () => {
           <Text style={styles.docText}>
             <Feather name="paperclip" size={13} /> {typeof doc === 'string' ? doc : doc.name}
           </Text>
-          <TouchableOpacity style={styles.view}>
-            <Text style={styles.viewTxt}>View</Text>
-          </TouchableOpacity>
+         <TouchableOpacity
+              style={styles.view}
+              onPress={() =>{
+                 console.log('Document being viewed:', doc);
+                
+                router.push({
+                  pathname: '/Pages/preview',
+                  params: {
+                    url: typeof doc === 'string' ? doc :  doc.downloadUrl, 
+                    name: typeof doc === 'string' ? doc : doc.name,
+                  },
+                })
+              } }>
+              <Text style={styles.viewTxt}>View</Text>
+            </TouchableOpacity>
+
         </View>
       ))}
     </View>

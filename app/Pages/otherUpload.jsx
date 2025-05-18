@@ -136,8 +136,10 @@ const OtherUpload = () => {
         name: docName,
         downloadUrl: downloadURL,
         firebasePath: firebaseFileName,
+        type: uploadedFileType, 
       }];
       setDocuments(updatedDocs);
+      
 
       setDocName("");
       setNewDocUri("");
@@ -207,9 +209,13 @@ const OtherUpload = () => {
       <TouchableOpacity
         style={styles.docContent}
         onPress={() => router.push({
-          pathname: "/Pages/previewOther",
-          params: { uri: item.downloadUrl },
-        })}
+        pathname: "/Pages/preview",
+        params: {
+          uri: item.downloadUrl,
+          type: item.type || "application/octet-stream",
+        },
+      })}
+
       >
         <Text style={styles.docName}>{item.name}</Text>
         <TouchableOpacity onPress={() => deleteDocument(index)}>
