@@ -133,7 +133,7 @@ const selectRfidDocs = () => {
             Alert.alert("Success", "Documents sent successfully to RFID Card!");
             setSelectedDocs([]);
 
-            router.push('/(tabs)/notification');
+            router.push('/(tabs)/home');
 
         } catch (error) {
             console.error("Error sending documents:", error);
@@ -147,7 +147,7 @@ const selectRfidDocs = () => {
                 <View>
                     <Text style={styles.head1}>Select Documents</Text>
                     <Text style={styles.head2}>
-                        to request <Text style={styles.name}>{item.name} !</Text>
+                        to send <Text style={styles.name}>{item.name} !</Text>
                     </Text>
                 </View>
 

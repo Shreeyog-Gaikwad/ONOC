@@ -260,52 +260,52 @@ const Notifibox = () => {
   const [verifiedOtp, setVerifiedOtp] = useState({});
 
   const handleReqOtpVerify = async (id, correctOtp) => {
-  if (enterOtp[id] === correctOtp) {
-    setVerifiedOtp(prev => ({ ...prev, [id]: true }));
+    if (enterOtp[id] === correctOtp) {
+      setVerifiedOtp(prev => ({ ...prev, [id]: true }));
 
-    try {
-      const reqDocRef = doc(db, "sendDocRequests", id);
-      const reqSnap = await getDoc(reqDocRef);
+      try {
+        const reqDocRef = doc(db, "sendDocRequests", id);
+        const reqSnap = await getDoc(reqDocRef);
 
-      if (!reqSnap.exists()) {
-        console.error("No such document request:", id);
-        return;
+        if (!reqSnap.exists()) {
+          console.error("No such document request:", id);
+          return;
+        }
+
+        const { documents: requestedDocs, to } = reqSnap.data();
+
+        const userQuery = query(collection(db, "userinfo"), where("name", "==", to));
+        const userSnap = await getDocs(userQuery);
+
+        if (userSnap.empty) {
+          console.error("No user found with name:", to);
+          return;
+        }
+
+        const userData = userSnap.docs[0].data();
+        const uploadedDocs = userData.uploadedDocuments || [];
+
+        const matchedDocs = uploadedDocs
+          .filter(doc => requestedDocs.includes(doc.name))
+          .map(doc => ({
+            name: doc.name,
+            downloadUrl: doc.path
+          }));
+
+        await updateDoc(reqDocRef, {
+          docSendTime: new Date(),
+          sendConfirmed: true,
+          documents: matchedDocs
+        });
+
+        console.log("✅ Documents matched and updated for:", id);
+      } catch (error) {
+        console.error("❌ Error during OTP verify and document update:", error);
       }
-
-      const { documents: requestedDocs, to } = reqSnap.data();
-
-      const userQuery = query(collection(db, "userinfo"), where("name", "==", to));
-      const userSnap = await getDocs(userQuery);
-
-      if (userSnap.empty) {
-        console.error("No user found with name:", to);
-        return;
-      }
-
-      const userData = userSnap.docs[0].data();
-      const uploadedDocs = userData.uploadedDocuments || [];
-
-      const matchedDocs = uploadedDocs
-        .filter(doc => requestedDocs.includes(doc.name))
-        .map(doc => ({
-          name: doc.name,
-          downloadUrl: doc.path
-        }));
-
-      await updateDoc(reqDocRef, {
-        docSendTime: new Date(),
-        sendConfirmed: true,
-        documents: matchedDocs
-      });
-
-      console.log("✅ Documents matched and updated for:", id);
-    } catch (error) {
-      console.error("❌ Error during OTP verify and document update:", error);
+    } else {
+      setVerifiedOtp(prev => ({ ...prev, [id]: false }));
     }
-  } else {
-    setVerifiedOtp(prev => ({ ...prev, [id]: false }));
-  }
-};
+  };
 
 
   const formatTimestamp = (timestamp) => {
@@ -723,7 +723,7 @@ const Notifibox = () => {
                 </Text>
                 <Text>You sended some documents to a Institution/Organization via ONOC Card</Text>
                 <Text>
-                  Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+                  Request ID : <Text style={{ fontWeight: 'bold' }}>{String(item.requestId)}</Text>
                 </Text>
                 <Text>
                   Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.sendTime)}</Text>
