@@ -10,7 +10,7 @@ import {
   FontAwesome5,
 } from "@expo/vector-icons";
 import { auth } from "@/config/FirebaseConfig";
-import { useState} from "react";
+import { useState } from "react";
 import { db } from "@/config/FirebaseConfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { useFocusEffect } from "@react-navigation/native";
@@ -128,7 +128,10 @@ const Home = () => {
                     }
                   }}
                 >
-                  <Icon name={doc.iconName} size={doc.size} color={iconColor} />
+                  {doc.name === "Other" ? <Icon name={doc.iconName} size={doc.size} color={"#ffc524"} /> : (
+                    <Icon name={doc.iconName} size={doc.size} color={iconColor} />
+                  )}
+
                   <Text style={styles.docText}>{doc.name}</Text>
                 </TouchableOpacity>
               );
