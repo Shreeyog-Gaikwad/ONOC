@@ -61,16 +61,6 @@ const HistoryBox = () => {
     setAllDocs(merged);
   }, [confirmedDocs, receivedDocs]);
 
-  useEffect(() => {
-    const merged = [...confirmedDocs, ...receivedDocs];
-    merged.sort((a, b) => {
-      const timeA = a.docSendTime?.toDate?.() || new Date(0);
-      const timeB = b.docSendTime?.toDate?.() || new Date(0);
-      return timeB - timeA;
-    });
-    setAllDocs(merged);
-  }, [confirmedDocs, receivedDocs]);
-
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <Text style={styles.senderText}>

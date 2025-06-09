@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, FlatList, TouchableOpacity } from 'react-native';
 import { useEffect, useState } from "react";
 import { auth, db } from "@/config/FirebaseConfig";
-import { collection, query, where, onSnapshot, or, Timestamp } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getDoc } from "firebase/firestore";
 import React from 'react';
 import Feather from '@expo/vector-icons/Feather';
 import { doc, updateDoc, getDocs } from "firebase/firestore";
@@ -17,13 +17,13 @@ const Notifibox = () => {
   const [receverReq, setReceverReq] = useState([]);
   const [senderReq, setSenderReq] = useState([]);
 
+  const [rfid, setRfid] = useState([]);
+  const [rfidTapped, setRfidTapped] = useState([]);
+
   const [allRequests, setAllRequests] = useState([...recever, ...sender]);
   const [allReqRequests, setAllReqRequests] = useState([...receverReq, ...senderReq]);
 
   const [sortedRequests, setSortedRequests] = useState([...allRequests, ...allReqRequests]);
-  const [rfid, setRfid] = useState([]);
-
-  const [allLogs, setAllLogs] = useState([...sortedRequests, ...rfid]);
 
   //RFID Documents
 
@@ -34,12 +34,36 @@ const Notifibox = () => {
         where("email", "==", auth.currentUser?.email),
       ),
       (snapshot) => {
-        const userData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          fromRfid: true,
-          ...doc.data(),
-        }));
+        const userData = snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            fromRfid: true,
+            ...doc.data(),
+          }))
+          .filter(doc => doc.status === "pending"); // filter here
+
         setRfid(userData);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(
+      query(
+        collection(db, "rfidDocs"),
+        where("email", "==", auth.currentUser?.email),
+      ),
+      (snapshot) => {
+        const userData = snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            fromRfid: true,
+            ...doc.data(),
+          }))
+          .filter(doc => doc.status === "tapped"); // filter here
+
+        setRfidTapped(userData);
       }
     );
     return () => unsubscribe();
@@ -236,23 +260,53 @@ const Notifibox = () => {
   const [verifiedOtp, setVerifiedOtp] = useState({});
 
   const handleReqOtpVerify = async (id, correctOtp) => {
-    if (enterOtp[id] === correctOtp) {
-      setVerifiedOtp(prev => ({ ...prev, [id]: true }));
+  if (enterOtp[id] === correctOtp) {
+    setVerifiedOtp(prev => ({ ...prev, [id]: true }));
 
-      try {
-        const docRef = doc(db, "sendDocRequests", id);
-        await updateDoc(docRef, {
-          docSendTime: new Date(),
-          sendConfirmed: true
-        });
-        console.log("sendConfirmed set to true for request:", id);
-      } catch (error) {
-        console.error("Failed to update sendConfirmed:", error);
+    try {
+      const reqDocRef = doc(db, "sendDocRequests", id);
+      const reqSnap = await getDoc(reqDocRef);
+
+      if (!reqSnap.exists()) {
+        console.error("No such document request:", id);
+        return;
       }
-    } else {
-      setVerifiedOtp(prev => ({ ...prev, [id]: false }));
+
+      const { documents: requestedDocs, to } = reqSnap.data();
+
+      const userQuery = query(collection(db, "userinfo"), where("name", "==", to));
+      const userSnap = await getDocs(userQuery);
+
+      if (userSnap.empty) {
+        console.error("No user found with name:", to);
+        return;
+      }
+
+      const userData = userSnap.docs[0].data();
+      const uploadedDocs = userData.uploadedDocuments || [];
+
+      const matchedDocs = uploadedDocs
+        .filter(doc => requestedDocs.includes(doc.name))
+        .map(doc => ({
+          name: doc.name,
+          downloadUrl: doc.path
+        }));
+
+      await updateDoc(reqDocRef, {
+        docSendTime: new Date(),
+        sendConfirmed: true,
+        documents: matchedDocs
+      });
+
+      console.log("✅ Documents matched and updated for:", id);
+    } catch (error) {
+      console.error("❌ Error during OTP verify and document update:", error);
     }
-  };
+  } else {
+    setVerifiedOtp(prev => ({ ...prev, [id]: false }));
+  }
+};
+
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
@@ -291,14 +345,32 @@ const Notifibox = () => {
 
   //Merging Request Document Requests
   useEffect(() => {
-    const combined = [...receverReq, ...senderReq];
-    const sorted = combined.sort((a, b) => {
-      const timeA = a.sendTime?.toDate?.() || a.acceptTime?.toDate?.() || a.rejectTime?.toDate?.() || new Date(0);
-      const timeB = b.sendTime?.toDate?.() || b.acceptTime?.toDate?.() || b.rejectTime?.toDate?.() || new Date(0);
-      return timeB - timeA;
+
+    // Merge all 3 arrays: receverReq, senderReq, and rfidWithTapped
+    const combined = [...receverReq, ...senderReq, ...rfid, ...rfidTapped];
+
+    // Sort the combined array by sendTime, acceptTime, or rejectTime (most recent first)
+    const sorted = [...combined].sort((a, b) => {
+      const timeA = (
+        a.sendTime?.toDate?.() ||
+        a.acceptTime?.toDate?.() ||
+        a.rejectTime?.toDate?.() ||
+        new Date(0)
+      ).getTime();
+
+      const timeB = (
+        b.sendTime?.toDate?.() ||
+        b.acceptTime?.toDate?.() ||
+        b.rejectTime?.toDate?.() ||
+        new Date(0)
+      ).getTime();
+
+      return timeB - timeA; // descending order: recent first
     });
+
     setAllReqRequests(sorted);
-  }, [receverReq, senderReq]);
+  }, [receverReq, senderReq, rfid, rfidTapped]);
+
 
   // Merging Send Doc And Request Doc
   useEffect(() => {
@@ -310,17 +382,6 @@ const Notifibox = () => {
     });
     setSortedRequests(sorted);
   }, [allRequests, allReqRequests]);
-
-  //Merging RFID logs and Other All Logs
-  useEffect(() => {
-    const combined = [...sortedRequests, ...rfid];
-    const sorted = combined.sort((a, b) => {
-      const timeA = a.sendTime?.toDate?.() || a.acceptTime?.toDate?.() || a.rejectTime?.toDate?.() || new Date(0);
-      const timeB = b.sendTime?.toDate?.() || b.acceptTime?.toDate?.() || b.rejectTime?.toDate?.() || new Date(0);
-      return timeB - timeA;
-    });
-    setAllLogs(sorted);
-  }, [sortedRequests, rfid]);
 
 
   // For Send Documents Recever
@@ -650,111 +711,133 @@ const Notifibox = () => {
 
   // For Request Documents Sender
   const senderReqSide = ({ item }) => {
-    return (<View style={styles.Item}>
-      <Text style={styles.requestText}><Feather name="user" size={14} /> {item.to}</Text>
-      {item.status === 'pending' ? (
-        <>
-          <Text>
-            You sended request to receive documents from {item.to}.
-          </Text>
-          <Text style={styles.title}>
-            Request successfully sent to <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
-          </Text>
-          <Text>
-            Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
-          </Text>
-          <Text>
-            Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.sendTime)}</Text>
-          </Text>
-        </>
-      ) : item.status === 'accepted' ? (
-        item.sendConfirmed ? (
-          <View>
-            <Text>
-              You successfully received the documents from {item.to}
-            </Text>
-            <Text>Request ID : <Text style={styles.bold}>{item.requestId}</Text></Text>
-            <Text>
-              Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text>
-            </Text>
-            <Text style={{ color: 'green' }}>
-              <AntDesign name="checkcircle" size={13} color="green" /> OTP verified. You can see the Documents in History Tab.
-            </Text>
-          </View>
-        ) : (
+    return (
+      <View style={styles.Item}>
+        {item.fromRfid ? (
           <>
-            {checkOtpExpiration(item) ? (
-              <>
-                <Text>Enter OTP shared by {item.to} to receive the documents :</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="numeric"
-                  maxLength={4}
-                  placeholder="Enter OTP"
-                  value={enterOtp[item.id] || ''}
-                  onChangeText={(text) =>
-                    setEnterOtp((prev) => ({ ...prev, [item.id]: text }))
-                  }
-                />
+            {item.status === "pending" ? (
+              <View>
                 <Text>
-                  OTP should be entered before <Text style={styles.bold}>{formatTimestamp(item.otpExpirationTime)}</Text> after that OTP will be expired
+                  <AntDesign name="creditcard" size={15} color="black" />{' '}
+                  <Text style={{ fontWeight: 'bold' }}>ONOC Card</Text>
                 </Text>
-                <TouchableOpacity
-                  style={styles.verifyButton}
-                  onPress={() => handleReqOtpVerify(item.id, item.otp)}
-                >
-                  <Text style={styles.buttonText}>Verify OTP</Text>
-                </TouchableOpacity>
-
-                {verifiedOtp[item.id] === true && (
-                  <Text style={{ color: 'green' }}>
-                    OTP verified <AntDesign name="checkcircle" size={13} color="green" />.
-                    You can see the documents in History Tab
-                  </Text>
-                )}
-
-                {verifiedOtp[item.id] === false && (
-                  <Text style={{ color: 'red' }}>
-                    Incorrect OTP <Entypo name="circle-with-cross" size={15} color="red" />
-                  </Text>
-                )}
-              </>
-            ) : (
-              <>
-                <Text>{item.to} accepted the request that you send to receive documents.</Text>
+                <Text>You sended some documents to a Institution/Organization via ONOC Card</Text>
                 <Text>
                   Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
                 </Text>
                 <Text>
-                  Date-Time : <Text style={styles.bold}>{formatTimestamp(item.otpExpirationTime)}</Text>
+                  Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.sendTime)}</Text>
                 </Text>
-                <Text style={{ color: 'red' }}>
-                  Time expired to enter the OTP <Entypo name="circle-with-cross" size={15} color="red" />
+              </View>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <Text style={styles.requestText}><Feather name="user" size={14} /> {item.to}</Text>
+            {item.status === 'pending' ? (
+              <>
+                <Text>
+                  You sended request to receive documents from {item.to}.
+                </Text>
+                <Text style={styles.title}>
+                  Request successfully sent to <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+                </Text>
+                <Text>
+                  Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+                </Text>
+                <Text>
+                  Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.sendTime)}</Text>
                 </Text>
               </>
-            )}
-          </>
-        )
-      ) : item.status === 'rejected' ? (
-        <>
-          <Text>
-            You requested some documents from {item.to}
-          </Text>
-          <Text style={styles.title}>
-            Request Rejected by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
-          </Text>
-          <Text>
-            Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
-          </Text>
-          <Text>
-            Rejected at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.rejectTime)}</Text>
-          </Text>
-          <Text style={{ color: 'red' }}>
-            Documents not received <Entypo name="circle-with-cross" size={15} color="red" />
-          </Text>
-        </>
-      ) : null}
-    </View >)
+            ) : item.status === 'accepted' ? (
+              item.sendConfirmed ? (
+                <View>
+                  <Text>
+                    You successfully received the documents from {item.to}
+                  </Text>
+                  <Text>Request ID : <Text style={styles.bold}>{item.requestId}</Text></Text>
+                  <Text>
+                    Date-Time: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.acceptTime)}</Text>
+                  </Text>
+                  <Text style={{ color: 'green' }}>
+                    <AntDesign name="checkcircle" size={13} color="green" /> OTP verified. You can see the Documents in History Tab.
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {checkOtpExpiration(item) ? (
+                    <>
+                      <Text>Enter OTP shared by {item.to} to receive the documents :</Text>
+                      <TextInput
+                        style={styles.input}
+                        keyboardType="numeric"
+                        maxLength={4}
+                        placeholder="Enter OTP"
+                        value={enterOtp[item.id] || ''}
+                        onChangeText={(text) =>
+                          setEnterOtp((prev) => ({ ...prev, [item.id]: text }))
+                        }
+                      />
+                      <Text>
+                        OTP should be entered before <Text style={styles.bold}>{formatTimestamp(item.otpExpirationTime)}</Text> after that OTP will be expired
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.verifyButton}
+                        onPress={() => handleReqOtpVerify(item.id, item.otp)}
+                      >
+                        <Text style={styles.buttonText}>Verify OTP</Text>
+                      </TouchableOpacity>
+
+                      {verifiedOtp[item.id] === true && (
+                        <Text style={{ color: 'green' }}>
+                          OTP verified <AntDesign name="checkcircle" size={13} color="green" />.
+                          You can see the documents in History Tab
+                        </Text>
+                      )}
+
+                      {verifiedOtp[item.id] === false && (
+                        <Text style={{ color: 'red' }}>
+                          Incorrect OTP <Entypo name="circle-with-cross" size={15} color="red" />
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Text>{item.to} accepted the request that you send to receive documents.</Text>
+                      <Text>
+                        Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+                      </Text>
+                      <Text>
+                        Date-Time : <Text style={styles.bold}>{formatTimestamp(item.otpExpirationTime)}</Text>
+                      </Text>
+                      <Text style={{ color: 'red' }}>
+                        Time expired to enter the OTP <Entypo name="circle-with-cross" size={15} color="red" />
+                      </Text>
+                    </>
+                  )}
+                </>
+              )
+            ) : item.status === 'rejected' ? (
+              <>
+                <Text>
+                  You requested some documents from {item.to}
+                </Text>
+                <Text style={styles.title}>
+                  Request Rejected by <Text style={{ fontWeight: 'bold' }}>{item.to}</Text>
+                </Text>
+                <Text>
+                  Request ID : <Text style={{ fontWeight: 'bold' }}>{item.requestId}</Text>
+                </Text>
+                <Text>
+                  Rejected at: <Text style={{ fontWeight: 'bold' }}>{formatTimestamp(item.rejectTime)}</Text>
+                </Text>
+                <Text style={{ color: 'red' }}>
+                  Documents not received <Entypo name="circle-with-cross" size={15} color="red" />
+                </Text>
+              </>
+            ) : null}</>
+        )}
+      </View >)
   }
 
   return (

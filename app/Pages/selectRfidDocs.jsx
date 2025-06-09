@@ -124,7 +124,8 @@ const selectRfidDocs = () => {
                 rfid: userData.rfid,
                 username: userData.username,
                 status: "pending",
-                documents: selectedDocs
+                documents: selectedDocs,
+                fromRfid : true,
             };
 
             await setDoc(doc(firestore, "rfidDocs", docId), newDoc);
