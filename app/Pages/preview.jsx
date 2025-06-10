@@ -1,52 +1,129 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 
 const Preview = () => {
-  const { url, name } = useLocalSearchParams();
+  const { uri, name, type } = useLocalSearchParams();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Helper to encode Firebase URL
   const encodeFirebaseUrl = (originalUrl) => {
     try {
+      if (!originalUrl || typeof originalUrl !== 'string') return '';
+   
+      if (!originalUrl.includes('firebasestorage.googleapis.com')) {
+        return originalUrl;
+      }
+      
       const decoded = decodeURIComponent(originalUrl);
-      const baseUrl = originalUrl.split('/o/')[0];
-      const pathAndQuery = originalUrl.split('/o/')[1];
-      const [path, query] = pathAndQuery.split('?');
-      const encodedPath = encodeURIComponent(path);
-      return `${baseUrl}/o/${encodedPath}?${query}`;
+      if (decoded.includes('/o/')) {
+        const baseUrl = originalUrl.split('/o/')[0];
+        const pathAndQuery = originalUrl.split('/o/')[1];
+        const [path, query] = pathAndQuery.split('?');
+        const encodedPath = encodeURIComponent(path);
+        return `${baseUrl}/o/${encodedPath}?${query}`;
+      }
+      return originalUrl;
     } catch (e) {
+      console.error('Error encoding URL:', e);
       return originalUrl;
     }
   };
 
-  const encodedUrl = typeof url === 'string' ? encodeFirebaseUrl(url) : '';
-  const isImage = /\.jpg|jpeg|png|gif|webp$/i.test(encodedUrl.split('?')[0]);
-  const isPDF = /\.pdf$/i.test(encodedUrl.split('?')[0]);
+  const encodedUrl = encodeFirebaseUrl(uri);
+  
+  // Determine file type
+  const fileExtension = (encodedUrl || '').split('?')[0].split('.').pop().toLowerCase();
+  const isPDF = /\.pdf$/i.test(encodedUrl.split('?')[0]) || type === 'pdf';
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(encodedUrl.split('?')[0]) || type === 'image';
 
-  console.log('url :', url);
-  console.log('Encoded URL:', encodedUrl);
-  console.log('Is image:', isImage);
-  console.log('Is PDF:', isPDF);
+  const handleOpenInBrowser = async () => {
+    if (encodedUrl) {
+      await WebBrowser.openBrowserAsync(encodedUrl);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{name}</Text>
-      {isImage ? (
-        <Image
-          source={{ uri: encodedUrl }}
-          style={styles.image}
-          onError={() => console.log('Image failed to load:', encodedUrl)}
-        />
-      ) : isPDF ? (
-        <WebView
-          source={{ uri: encodedUrl }}
-          style={styles.pdf}
-          onError={(e) => console.log('PDF failed to load', e.nativeEvent)}
-        />
-      ) : (
-        <Text style={styles.error}>Cannot preview this file type</Text>
-      )}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.title}>{name || "Document Preview"}</Text>
+        <TouchableOpacity 
+          style={styles.externalButton}
+          onPress={handleOpenInBrowser}
+        >
+          <Ionicons name="open-outline" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.previewContainer}>
+        {isImage ? (
+          <Image
+            source={{ uri: encodedUrl }}
+            style={styles.image}
+            onLoadStart={() => setLoading(true)}
+            onLoadEnd={() => setLoading(false)}
+            onError={() => {
+              setLoading(false);
+              setError('Failed to load image');
+            }}
+            resizeMode="contain"
+          />
+        ) : isPDF ? (
+          <WebView
+            source={{ uri: encodedUrl }}
+            style={styles.pdf}
+            onLoadStart={() => setLoading(true)}
+            onLoadEnd={() => setLoading(false)}
+            onError={() => {
+              setLoading(false);
+              setError('Failed to load PDF');
+            }}
+          />
+        ) : (
+          <View style={styles.unsupportedContainer}>
+            <Ionicons name="document-outline" size={80} color="#ccc" />
+            <Text style={styles.unsupportedText}>
+              This file type cannot be previewed in the app
+            </Text>
+            <TouchableOpacity 
+              style={styles.openButton}
+              onPress={handleOpenInBrowser}
+            >
+              <Text style={styles.openButtonText}>Open in Browser</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {loading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#3629B7" />
+            <Text style={styles.loadingText}>Loading document...</Text>
+          </View>
+        )}
+
+        {error && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle-outline" size={40} color="#E9446A" />
+            <Text style={styles.error}>{error}</Text>
+            <TouchableOpacity 
+              style={styles.openButton}
+              onPress={handleOpenInBrowser}
+            >
+              <Text style={styles.openButtonText}>Try Open in Browser</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 };
@@ -57,27 +134,87 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  backButton: {
+    padding: 5,
+  },
+  externalButton: {
+    padding: 5,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    flex: 1,
     textAlign: 'center',
-    marginTop: 50,
+  },
+  previewContainer: {
+    flex: 1,
+    position: 'relative',
   },
   image: {
+    flex: 1,
     width: '100%',
-    height: 400,
-    borderRadius: 10,
+    height: '100%',
   },
   pdf: {
     flex: 1,
-    borderRadius: 10,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   error: {
-    color: 'red',
+    color: '#E9446A',
     fontSize: 16,
     textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  unsupportedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  unsupportedText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  openButton: {
+    backgroundColor: '#3629B7',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  openButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
