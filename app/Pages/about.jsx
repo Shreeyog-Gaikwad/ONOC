@@ -178,7 +178,7 @@ const About = () => {
                             <TeamMember 
                                 name="Sakshi Walunjkar" 
                                 role="Tester" 
-                                image={require("../../assets/images/User.png")} 
+                                image={require("../../assets/images/sakshi.jpg")} 
                                 linkedin="https://www.linkedin.com/in/sakshi-walunjkar-170a36275?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app "
                             />
                         </ScrollView>
