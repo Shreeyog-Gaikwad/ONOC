@@ -36,7 +36,6 @@ const Preview = () => {
 
   const encodedUrl = encodeFirebaseUrl(uri);
   
-  // Determine file type
   const fileExtension = (encodedUrl || '').split('?')[0].split('.').pop().toLowerCase();
   const isPDF = /\.pdf$/i.test(encodedUrl.split('?')[0]) || type === 'pdf';
   const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(encodedUrl.split('?')[0]) || type === 'image';

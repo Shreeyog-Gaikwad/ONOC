@@ -46,7 +46,7 @@ const Notifibox = () => {
   }, []);
 
 
-  // For Send Documents Recever
+  // For Send Documents Receiver
   useEffect(() => {
     const unsubscribe = onSnapshot(
       query(

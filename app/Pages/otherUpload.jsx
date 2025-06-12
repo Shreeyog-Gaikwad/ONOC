@@ -69,7 +69,6 @@ const OtherUpload = () => {
         const userDoc = querySnapshot.docs[0];
         const userData = userDoc.data();
 
-        // Check if the user has uploaded documents of the specific type
         const uploadedDocuments = userData.uploadedDocuments || [];
         const otherDocs = uploadedDocuments.filter((doc) => doc.other === true);
 
@@ -93,7 +92,6 @@ const OtherUpload = () => {
         setNewDocUri(selectedAsset.uri);
         setNewFileName(selectedAsset.name);
 
-        // Determine file type
         const fileExtension = selectedAsset.name.split('.').pop().toLowerCase();
         if (fileExtension === 'pdf') {
           setUploadedFileType('pdf');
@@ -162,7 +160,6 @@ const OtherUpload = () => {
           { merge: true }
         );
 
-        // Update local state
         const updatedDocs = [
           ...documents, 
           {
@@ -209,7 +206,6 @@ const OtherUpload = () => {
               const docToDelete = documents[index];
 
               if (docToDelete.firebasePath) {
-                // Delete from Firebase Storage
                 const storage = getStorage();
                 const storageRef = ref(storage, docToDelete.firebasePath);
                 try {
@@ -220,11 +216,9 @@ const OtherUpload = () => {
                 }
               }
 
-              // Update local state
               const updatedDocs = documents.filter((_, i) => i !== index);
               setDocuments(updatedDocs);
 
-              // Update Firestore
               const firestore = getFirestore();
               const userinfoRef = collection(firestore, "userinfo");
               const q = query(userinfoRef, where("email", "==", user.email));

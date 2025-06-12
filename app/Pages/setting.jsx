@@ -35,7 +35,6 @@ const Setting = () => {
                 const userInfo = querySnapshot.docs[0].data();
                 if (userInfo) {
                     setProfilePic(userInfo.profilePic);
-                    // You could also fetch these preferences from Firestore
                     setNotificationsEnabled(userInfo.notificationsEnabled || true);
                     setBiometricEnabled(userInfo.biometricEnabled || false);
                     setDarkModeEnabled(userInfo.darkModeEnabled || false);

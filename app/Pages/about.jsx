@@ -184,82 +184,7 @@ const About = () => {
                         </ScrollView>
                     </Section>
 
-                    {/* <Section title="Privacy & Security">
-                        <Text style={styles.paragraph}>
-                            At ONOC, we take your privacy and data security extremely seriously. 
-                            All documents are encrypted using industry-standard protocols, and 
-                            we never share your information with third parties without your 
-                            explicit consent.
-                        </Text>
-                        
-                        <TouchableOpacity 
-                            style={styles.linkButton}
-                            onPress={() => Linking.openURL('https://onoc.com/privacy-policy')}
-                        >
-                            <Text style={styles.linkText}>View Privacy Policy</Text>
-                            <Ionicons name="open-outline" size={16} color="#3629B7" />
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                            style={styles.linkButton}
-                            onPress={() => Linking.openURL('https://onoc.com/terms-of-service')}
-                        >
-                            <Text style={styles.linkText}>Terms of Service</Text>
-                            <Ionicons name="open-outline" size={16} color="#3629B7" />
-                        </TouchableOpacity>
-                    </Section> */}
-
-                    {/* <Section title="Contact Us">
-                        <Text style={styles.paragraph}>
-                            We'd love to hear from you! If you have any questions, feedback, 
-                            or suggestions, please don't hesitate to reach out to us.
-                        </Text>
-                        
-                        <View style={styles.contactItem}>
-                            <Ionicons name="mail-outline" size={20} color="#3629B7" />
-                            <Text style={styles.contactText}>support@onoc.com</Text>
-                        </View>
-                        
-                        <View style={styles.contactItem}>
-                            <Ionicons name="call-outline" size={20} color="#3629B7" />
-                            <Text style={styles.contactText}>+91 9876543210</Text>
-                        </View>
-                        
-                        <View style={styles.contactItem}>
-                            <Ionicons name="location-outline" size={20} color="#3629B7" />
-                            <Text style={styles.contactText}>123 Tech Park, Mumbai, India</Text>
-                        </View>
-                    </Section> */}
-
-                    {/* <View style={styles.socialMediaContainer}>
-                        <TouchableOpacity 
-                            style={[styles.socialButton, { backgroundColor: '#3b5998' }]}
-                            onPress={() => Linking.openURL('https://facebook.com/onocapp')}
-                        >
-                            <FontAwesome name="facebook" size={20} color="#fff" />
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                            style={[styles.socialButton, { backgroundColor: '#1DA1F2' }]}
-                            onPress={() => Linking.openURL('https://twitter.com/onocapp')}
-                        >
-                            <FontAwesome name="twitter" size={20} color="#fff" />
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                            style={[styles.socialButton, { backgroundColor: '#C13584' }]}
-                            onPress={() => Linking.openURL('https://instagram.com/onocapp')}
-                        >
-                            <FontAwesome name="instagram" size={20} color="#fff" />
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity 
-                            style={[styles.socialButton, { backgroundColor: '#0A66C2' }]}
-                            onPress={() => Linking.openURL('https://linkedin.com/company/onocapp')}
-                        >
-                            <FontAwesome name="linkedin" size={20} color="#fff" />
-                        </TouchableOpacity>
-                    </View> */}
+                   
 
                     <Text style={styles.copyright}>
                         © 2025 One Nation One Card. All rights reserved.
@@ -446,34 +371,7 @@ const styles = StyleSheet.create({
         color: '#3629B7',
         fontWeight: '500',
     },
-    // contactItem: {
-    //     flexDirection: 'row',
-    //     alignItems: 'center',
-    //     marginBottom: 12,
-    // },
-    // contactText: {
-    //     fontSize: 15,
-    //     color: '#555',
-    //     marginLeft: 10,
-    // },
-    // socialMediaContainer: {
-    //     flexDirection: 'row',
-    //     justifyContent: 'center',
-    //     marginVertical: 20,
-    // },
-    // socialButton: {
-    //     width: 45,
-    //     height: 45,
-    //     borderRadius: 23,
-    //     justifyContent: 'center',
-    //     alignItems: 'center',
-    //     marginHorizontal: 10,
-    //     shadowColor: '#000',
-    //     shadowOffset: { width: 0, height: 2 },
-    //     shadowOpacity: 0.1,
-    //     shadowRadius: 4,
-    //     elevation: 2,
-    // },
+    
     copyright: {
         textAlign: 'center',
         fontSize: 13,
